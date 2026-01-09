@@ -3,34 +3,34 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Tanks Fixed</title>
+    <title>Tanks Multitouch Fixed</title>
     <style>
-        body { margin: 0; background: #1a1a1a; overflow: hidden; touch-action: none; font-family: sans-serif; }
+        body { margin: 0; background: #1a1a1a; overflow: hidden; touch-action: none; font-family: sans-serif; -webkit-user-select: none; }
         canvas { display: block; background: #000; }
         .ui { position: absolute; width: 100%; color: white; display: flex; justify-content: space-around; top: 48%; pointer-events: none; z-index: 100; font-size: 18px; opacity: 0.8; }
         
-        .joy-zone { position: absolute; width: 130px; height: 130px; background: rgba(255,255,255,0.05); border: 2px solid rgba(255,255,255,0.2); border-radius: 50%; z-index: 200; pointer-events: auto; }
-        .stick { position: absolute; width: 50px; height: 50px; background: rgba(255,255,255,0.3); border-radius: 50%; top: 40px; left: 40px; pointer-events: none; }
-        .btn-fire { position: absolute; width: 80px; height: 80px; border-radius: 50%; z-index: 200; pointer-events: auto; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; border: 3px solid #fff; }
+        .joy-zone { position: absolute; width: 120px; height: 120px; background: rgba(255,255,255,0.05); border: 2px solid rgba(255,255,255,0.2); border-radius: 50%; z-index: 200; pointer-events: auto; touch-action: none; }
+        .stick { position: absolute; width: 50px; height: 50px; background: rgba(255,255,255,0.3); border-radius: 50%; top: 35px; left: 35px; pointer-events: none; }
+        .btn-fire { position: absolute; width: 90px; height: 90px; border-radius: 50%; z-index: 200; pointer-events: auto; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; border: 3px solid #fff; touch-action: none; }
 
-        /* Игрок 1 (Снизу) */
-        #p1-joy { bottom: 30px; left: 30px; }
-        #p1-fire { bottom: 55px; right: 40px; background: rgba(0,255,0,0.3); border-color: #0f0; }
+        /* Игрок 2 (Красный) - СВЕРХУ */
+        #p2-joy { top: 20px; left: 20px; transform: rotate(180deg); }
+        #p2-fire { top: 35px; right: 20px; background: rgba(255,0,0,0.3); border-color: #f00; transform: rotate(180deg); }
 
-        /* Игрок 2 (Сверху) */
-        #p2-joy { top: 30px; right: 30px; transform: rotate(180deg); }
-        #p2-fire { top: 55px; left: 40px; background: rgba(255,0,0,0.3); border-color: #f00; transform: rotate(180deg); }
+        /* Игрок 1 (Зеленый) - СНИЗУ */
+        #p1-joy { bottom: 20px; right: 20px; }
+        #p1-fire { bottom: 35px; left: 20px; background: rgba(0,255,0,0.3); border-color: #0f0; }
     </style>
 </head>
 <body>
     <div class="ui"><span id="s2">Красный: 0</span><span id="s1">Зеленый: 0</span></div>
     <canvas id="g"></canvas>
     
-    <div id="p1-joy" class="joy-zone"><div id="p1-stick" class="stick"></div></div>
-    <div id="p1-fire" class="btn-fire">ОГОНЬ</div>
-
     <div id="p2-joy" class="joy-zone"><div id="p2-stick" class="stick"></div></div>
     <div id="p2-fire" class="btn-fire">ОГОНЬ</div>
+
+    <div id="p1-joy" class="joy-zone"><div id="p1-stick" class="stick"></div></div>
+    <div id="p1-fire" class="btn-fire">ОГОНЬ</div>
 
 <script>
 const cvs = document.getElementById('g'); const ctx = cvs.getContext('2d');
@@ -45,10 +45,10 @@ let tanks = [
 function drawTank(t) {
     ctx.save(); ctx.translate(t.x, t.y); ctx.rotate(t.a);
     ctx.fillStyle = t.c;
-    ctx.beginPath(); ctx.roundRect(-25, -20, 50, 40, 10); ctx.fill();
-    ctx.fillStyle = 'rgba(0,0,0,0.3)';
+    ctx.beginPath(); ctx.roundRect(-25, -20, 50, 40, 12); ctx.fill();
+    ctx.fillStyle = 'rgba(0,0,0,0.4)';
     ctx.beginPath(); ctx.arc(0, 0, 12, 0, 7); ctx.fill();
-    ctx.fillStyle = '#999'; ctx.fillRect(12, -4, 28, 8);
+    ctx.fillStyle = '#888'; ctx.fillRect(15, -5, 25, 10);
     ctx.restore();
 }
 
@@ -56,87 +56,77 @@ function update() {
     ctx.fillStyle = '#000'; ctx.fillRect(0,0,cvs.width,cvs.height);
     
     tanks.forEach((t) => {
-        if (t.dx !== 0 || t.dy !== 0) {
-            t.x += t.dx * 5; t.y += t.dy * 5;
+        if (Math.abs(t.dx) > 0.1 || Math.abs(t.dy) > 0.1) {
+            t.x += t.dx * 6; t.y += t.dy * 6;
             t.a = Math.atan2(t.dy, t.dx);
         }
-        // Ограничение движения границами экрана
-        t.x = Math.max(25, Math.min(cvs.width - 25, t.x));
-        t.y = Math.max(25, Math.min(cvs.height - 25, t.y));
+        t.x = Math.max(25, Math.min(cvs.width-25, t.x));
+        t.y = Math.max(25, Math.min(cvs.height-25, t.y));
         drawTank(t);
     });
 
     for (let i = bullets.length - 1; i >= 0; i--) {
         let b = bullets[i];
-        b.x += Math.cos(b.a) * 10;
-        b.y += Math.sin(b.a) * 10;
-        
-        ctx.fillStyle = 'yellow';
-        ctx.beginPath(); ctx.arc(b.x, b.y, 5, 0, 7); ctx.fill();
+        b.x += Math.cos(b.a) * 12; b.y += Math.sin(b.a) * 12;
+        ctx.fillStyle = 'yellow'; ctx.beginPath(); ctx.arc(b.x, b.y, 5, 0, 7); ctx.fill();
 
         let hit = false;
         tanks.forEach((t) => {
-            // Проверка попадания: только если снаряд не свой
             if (b.owner !== t.id && Math.hypot(b.x - t.x, b.y - t.y) < 30) {
                 tanks[b.owner].s++;
                 document.getElementById('s'+(b.owner === 0 ? '1' : '2')).innerText = 
                     (b.owner === 0 ? 'Зеленый: ' : 'Красный: ') + tanks[b.owner].s;
-                // Сброс подбитого танка
                 t.x = t.id === 0 ? cvs.width/2 : cvs.width/2;
                 t.y = t.id === 0 ? cvs.height-100 : 100;
                 hit = true;
             }
         });
-
-        if (hit || b.x < 0 || b.x > cvs.width || b.y < 0 || b.y > cvs.height) {
-            bullets.splice(i, 1);
-        }
+        if (hit || b.x < 0 || b.x > cvs.width || b.y < 0 || b.y > cvs.height) bullets.splice(i, 1);
     }
     requestAnimationFrame(update);
 }
 
-function setupJoy(joyId, stickId, tankIdx) {
+function setupJoystick(joyId, stickId, tankIdx) {
     const joy = document.getElementById(joyId);
     const stick = document.getElementById(stickId);
-    const rect = joy.getBoundingClientRect();
-    const cX = 65, cY = 65; 
-
-    const handleMove = (e) => {
-        const touch = e.touches[0];
-        const x = touch.clientX - joy.offsetLeft - cX;
-        const y = touch.clientY - joy.offsetTop - cY;
-        const dist = Math.min(50, Math.hypot(x, y));
+    
+    const moveStick = (e) => {
+        const rect = joy.getBoundingClientRect();
+        const centerX = rect.left + rect.width / 2;
+        const centerY = rect.top + rect.height / 2;
+        const x = e.clientX - centerX;
+        const y = e.clientY - centerY;
+        const dist = Math.min(45, Math.hypot(x, y));
         const angle = Math.atan2(y, x);
-        
+
         stick.style.transform = `translate(${Math.cos(angle)*dist}px, ${Math.sin(angle)*dist}px)`;
-        if (dist > 10) {
-            tanks[tankIdx].dx = Math.cos(angle) * (dist/50);
-            tanks[tankIdx].dy = Math.sin(angle) * (dist/50);
-        }
+        tanks[tankIdx].dx = Math.cos(angle) * (dist/45);
+        tanks[tankIdx].dy = Math.sin(angle) * (dist/45);
     };
 
-    joy.addEventListener('touchstart', (e) => { e.preventDefault(); handleMove(e); });
-    joy.addEventListener('touchmove', (e) => { e.preventDefault(); handleMove(e); });
-    joy.addEventListener('touchend', () => { 
-        stick.style.transform = 'translate(0,0)'; 
-        tanks[tankIdx].dx = 0; tanks[tankIdx].dy = 0; 
-    });
+    joy.onpointerdown = (e) => { joy.setPointerCapture(e.pointerId); moveStick(e); };
+    joy.onpointermove = (e) => { if (joy.hasPointerCapture(e.pointerId)) moveStick(e); };
+    joy.onpointerup = (e) => {
+        joy.releasePointerCapture(e.pointerId);
+        stick.style.transform = 'translate(0,0)';
+        tanks[tankIdx].dx = 0; tanks[tankIdx].dy = 0;
+    };
 }
 
-setupJoy('p1-joy', 'p1-stick', 0);
-setupJoy('p2-joy', 'p2-stick', 1);
+setupJoystick('p1-joy', 'p1-stick', 0);
+setupJoystick('p2-joy', 'p2-stick', 1);
 
 const shoot = (idx) => {
     bullets.push({
-        x: tanks[idx].x + Math.cos(tanks[idx].a) * 35,
-        y: tanks[idx].y + Math.sin(tanks[idx].a) * 35,
+        x: tanks[idx].x + Math.cos(tanks[idx].a) * 40,
+        y: tanks[idx].y + Math.sin(tanks[idx].a) * 40,
         a: tanks[idx].a,
         owner: idx
     });
 };
 
-document.getElementById('p1-fire').addEventListener('touchstart', (e) => { e.preventDefault(); shoot(0); });
-document.getElementById('p2-fire').addEventListener('touchstart', (e) => { e.preventDefault(); shoot(1); });
+document.getElementById('p1-fire').onpointerdown = (e) => { e.preventDefault(); shoot(0); };
+document.getElementById('p2-fire').onpointerdown = (e) => { e.preventDefault(); shoot(1); };
 
 update();
 </script>
