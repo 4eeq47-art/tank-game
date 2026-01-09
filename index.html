@@ -3,23 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Tanks Side Battle</title>
+    <title>Tanks Balanced UI</title>
     <style>
         body { margin: 0; background: #1a1a1a; overflow: hidden; touch-action: none; font-family: sans-serif; -webkit-user-select: none; }
         canvas { display: block; background: #000; }
-        .ui { position: absolute; width: 100%; color: white; display: flex; justify-content: space-around; top: 20px; pointer-events: none; z-index: 100; font-size: 20px; font-weight: bold; }
+        .ui { position: absolute; width: 100%; color: white; display: flex; justify-content: space-around; top: 50%; transform: translateY(-50%); pointer-events: none; z-index: 100; font-size: 18px; font-weight: bold; opacity: 0.6; }
         
-        .joy-zone { position: absolute; width: 130px; height: 130px; background: rgba(255,255,255,0.05); border: 2px solid rgba(255,255,255,0.2); border-radius: 50%; z-index: 200; touch-action: none; }
-        .stick { position: absolute; width: 50px; height: 50px; background: rgba(255,255,255,0.4); border-radius: 50%; top: 40px; left: 40px; pointer-events: none; }
-        .btn-fire { position: absolute; width: 100px; height: 100px; border-radius: 50%; z-index: 200; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; border: 4px solid #fff; touch-action: none; }
+        .joy-zone { position: absolute; width: 120px; height: 120px; background: rgba(255,255,255,0.05); border: 2px solid rgba(255,255,255,0.2); border-radius: 50%; z-index: 200; touch-action: none; }
+        .stick { position: absolute; width: 45px; height: 45px; background: rgba(255,255,255,0.4); border-radius: 50%; top: 37px; left: 37px; pointer-events: none; }
+        .btn-fire { position: absolute; width: 100px; height: 100px; border-radius: 50%; z-index: 200; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; border: 4px solid #fff; touch-action: none; font-size: 16px; }
 
+        /* СИММЕТРИЧНОЕ РАСПОЛОЖЕНИЕ */
+        
         /* Игрок 1 (Зеленый) - СЛЕВА */
-        #p1-joy { bottom: 30px; left: 30px; }
-        #p1-fire { bottom: 180px; left: 45px; background: rgba(0,255,0,0.3); border-color: #0f0; }
+        #p1-joy { bottom: 40px; left: 30px; }            /* Джойстик слева */
+        #p1-fire { bottom: 40px; right: 30px; background: rgba(0,255,0,0.3); border-color: #0f0; } /* Огонь справа */
 
-        /* Игрок 2 (Красный) - СПРАВА */
-        #p2-joy { bottom: 30px; right: 30px; }
-        #p2-fire { bottom: 180px; right: 45px; background: rgba(255,0,0,0.3); border-color: #f00; }
+        /* Игрок 2 (Красный) - СПРАВА (инверсия для игрока напротив) */
+        #p2-joy { top: 40px; right: 30px; transform: rotate(180deg); }  /* Джойстик справа (отн. него) */
+        #p2-fire { top: 40px; left: 30px; background: rgba(255,0,0,0.3); border-color: #f00; transform: rotate(180deg); } /* Огонь слева */
     </style>
 </head>
 <body>
@@ -36,115 +38,84 @@
 const cvs = document.getElementById('g'); const ctx = cvs.getContext('2d');
 cvs.width = window.innerWidth; cvs.height = window.innerHeight;
 
-let bullets = [];
-let explosions = [];
-let tanks = [
-    { x: 150, y: cvs.height/2, c: 'green', a: 0, s: 0, dx:0, dy:0, id: 0 },
-    { x: cvs.width-150, y: cvs.height/2, c: 'red', a: Math.PI, s: 0, dx:0, dy:0, id: 1 }
+let bullets = [], explosions = [];
+// Стены баз (П-образные укрытия)
+const walls = [
+    // База зеленого (слева)
+    {x: 0, y: cvs.height/2-70, w: 110, h: 15}, {x: 0, y: cvs.height/2+55, w: 110, h: 15}, {x: 95, y: cvs.height/2-70, w: 15, h: 140},
+    // База красного (справа)
+    {x: cvs.width-110, y: cvs.height/2-70, w: 110, h: 15}, {x: cvs.width-110, y: cvs.height/2+55, w: 110, h: 15}, {x: cvs.width-110, y: cvs.height/2-70, w: 15, h: 140}
 ];
 
-function createExplosion(x, y) {
-    explosions.push({x, y, r: 10, alpha: 1});
-}
+let tanks = [
+    { x: 45, y: cvs.height/2, c: 'green', a: 0, s: 0, dx:0, dy:0, id: 0 },
+    { x: cvs.width-45, y: cvs.height/2, c: 'red', a: Math.PI, s: 0, dx:0, dy:0, id: 1 }
+];
 
 function drawTank(t) {
     ctx.save(); ctx.translate(t.x, t.y); ctx.rotate(t.a);
-    ctx.fillStyle = t.c;
-    ctx.beginPath(); ctx.roundRect(-25, -20, 50, 40, 12); ctx.fill();
-    ctx.fillStyle = 'rgba(0,0,0,0.4)';
-    ctx.beginPath(); ctx.arc(0, 0, 12, 0, 7); ctx.fill();
-    ctx.fillStyle = '#888'; ctx.fillRect(15, -5, 25, 10);
-    ctx.restore();
+    ctx.fillStyle = t.c; ctx.beginPath(); ctx.roundRect(-24, -20, 48, 40, 12); ctx.fill();
+    ctx.fillStyle = 'rgba(0,0,0,0.4)'; ctx.beginPath(); ctx.arc(0, 0, 12, 0, 7); ctx.fill();
+    ctx.fillStyle = '#888'; ctx.fillRect(15, -5, 25, 10); ctx.restore();
 }
 
 function update() {
     ctx.fillStyle = '#000'; ctx.fillRect(0,0,cvs.width,cvs.height);
-    
-    // Отрисовка взрывов
-    for(let i=explosions.length-1; i>=0; i--) {
-        let ex = explosions[i];
-        ctx.beginPath();
-        ctx.arc(ex.x, ex.y, ex.r, 0, 7);
-        ctx.fillStyle = `rgba(255, 165, 0, ${ex.alpha})`;
-        ctx.fill();
-        ex.r += 2; ex.alpha -= 0.05;
-        if(ex.alpha <= 0) explosions.splice(i, 1);
-    }
+    ctx.fillStyle = '#444'; walls.forEach(w => ctx.fillRect(w.x, w.y, w.w, w.h));
 
-    tanks.forEach((t) => {
+    explosions.forEach((ex, i) => {
+        ctx.beginPath(); ctx.arc(ex.x, ex.y, ex.r, 0, 7);
+        ctx.fillStyle = `rgba(255,150,0,${ex.a})`; ctx.fill();
+        ex.r += 2.5; ex.a -= 0.04; if(ex.a<=0) explosions.splice(i,1);
+    });
+
+    tanks.forEach(t => {
         if (Math.abs(t.dx) > 0.1 || Math.abs(t.dy) > 0.1) {
-            t.x += t.dx * 3.5; t.y += t.dy * 3.5; // Скорость замедлена
+            let nX = t.x + t.dx * 3.5; let nY = t.y + t.dy * 3.5;
+            let col = walls.some(w => nX+22 > w.x && nX-22 < w.x+w.w && nY+22 > w.y && nY-22 < w.y+w.h);
+            if(!col) { t.x = nX; t.y = nY; }
             t.a = Math.atan2(t.dy, t.dx);
         }
-        t.x = Math.max(25, Math.min(cvs.width-25, t.x));
-        t.y = Math.max(25, Math.min(cvs.height-25, t.y));
+        t.x = Math.max(22, Math.min(cvs.width-22, t.x)); t.y = Math.max(22, Math.min(cvs.height-22, t.y));
         drawTank(t);
     });
 
-    for (let i = bullets.length - 1; i >= 0; i--) {
-        let b = bullets[i];
-        b.x += Math.cos(b.a) * 12; b.y += Math.sin(b.a) * 12;
-        ctx.fillStyle = 'yellow'; ctx.beginPath(); ctx.arc(b.x, b.y, 5, 0, 7); ctx.fill();
+    for (let i = bullets.length-1; i >= 0; i--) {
+        let b = bullets[i]; b.x += Math.cos(b.a)*11; b.y += Math.sin(b.a)*11;
+        ctx.fillStyle = 'yellow'; ctx.beginPath(); ctx.arc(b.x, b.y, 4, 0, 7); ctx.fill();
 
         let hit = false;
-        tanks.forEach((t) => {
-            if (b.owner !== t.id && Math.hypot(b.x - t.x, b.y - t.y) < 30) {
-                createExplosion(t.x, t.y);
+        if(walls.some(w => b.x > w.x && b.x < w.x+w.w && b.y > w.y && b.y < w.y+w.h)) hit = true;
+        tanks.forEach(t => {
+            if (b.owner !== t.id && Math.hypot(b.x-t.x, b.y-t.y) < 28) {
+                explosions.push({x:t.x, y:t.y, r:10, a:1});
                 tanks[b.owner].s++;
-                document.getElementById('s'+(b.owner === 0 ? '1' : '2')).innerText = 
-                    (b.owner === 0 ? 'Зеленый: ' : 'Красный: ') + tanks[b.owner].s;
-                t.x = t.id === 0 ? 150 : cvs.width-150;
-                t.y = cvs.height/2;
-                hit = true;
+                document.getElementById('s'+(b.owner+1)).innerText = (b.owner===0?'Зеленый: ':'Красный: ')+tanks[b.owner].s;
+                t.x = t.id===0?45:cvs.width-45; t.y = cvs.height/2; hit = true;
             }
         });
-        if (hit || b.x < 0 || b.x > cvs.width || b.y < 0 || b.y > cvs.height) bullets.splice(i, 1);
+        if(hit || b.x<0 || b.x>cvs.width || b.y<0 || b.y>cvs.height) bullets.splice(i,1);
     }
     requestAnimationFrame(update);
 }
 
-function setupJoystick(joyId, stickId, tankIdx) {
-    const joy = document.getElementById(joyId);
-    const stick = document.getElementById(stickId);
-    
-    const moveStick = (e) => {
-        const rect = joy.getBoundingClientRect();
-        const centerX = rect.left + rect.width / 2;
-        const centerY = rect.top + rect.height / 2;
-        const x = e.clientX - centerX;
-        const y = e.clientY - centerY;
-        const dist = Math.min(45, Math.hypot(x, y));
-        const angle = Math.atan2(y, x);
-
-        stick.style.transform = `translate(${x * (dist/Math.hypot(x,y))}px, ${y * (dist/Math.hypot(x,y))}px)`;
-        tanks[tankIdx].dx = Math.cos(angle) * (dist/45);
-        tanks[tankIdx].dy = Math.sin(angle) * (dist/45);
+function setupJoy(joyId, stickId, idx) {
+    const joy = document.getElementById(joyId); const stick = document.getElementById(stickId);
+    const move = (e) => {
+        const r = joy.getBoundingClientRect(); const x = e.clientX-r.left-60; const y = e.clientY-r.top-60;
+        const d = Math.min(45, Math.hypot(x,y)); const a = Math.atan2(y,x);
+        stick.style.transform = `translate(${Math.cos(a)*d}px, ${Math.sin(a)*d}px)`;
+        tanks[idx].dx = Math.cos(a)*(d/45); tanks[idx].dy = Math.sin(a)*(d/45);
     };
-
-    joy.onpointerdown = (e) => { joy.setPointerCapture(e.pointerId); moveStick(e); };
-    joy.onpointermove = (e) => { if (joy.hasPointerCapture(e.pointerId)) moveStick(e); };
-    joy.onpointerup = (e) => {
-        joy.releasePointerCapture(e.pointerId);
-        stick.style.transform = 'translate(0,0)';
-        tanks[tankIdx].dx = 0; tanks[tankIdx].dy = 0;
-    };
+    joy.onpointerdown = (e) => { joy.setPointerCapture(e.pointerId); move(e); };
+    joy.onpointermove = (e) => { if(joy.hasPointerCapture(e.pointerId)) move(e); };
+    joy.onpointerup = (e) => { stick.style.transform = ''; tanks[idx].dx = 0; tanks[idx].dy = 0; };
 }
+setupJoy('p1-joy', 'p1-stick', 0); setupJoy('p2-joy', 'p2-stick', 1);
 
-setupJoystick('p1-joy', 'p1-stick', 0);
-setupJoystick('p2-joy', 'p2-stick', 1);
-
-const shoot = (idx) => {
-    bullets.push({
-        x: tanks[idx].x + Math.cos(tanks[idx].a) * 40,
-        y: tanks[idx].y + Math.sin(tanks[idx].a) * 40,
-        a: tanks[idx].a,
-        owner: idx
-    });
-};
-
+const shoot = (idx) => bullets.push({x:tanks[idx].x+Math.cos(tanks[idx].a)*38, y:tanks[idx].y+Math.sin(tanks[idx].a)*38, a:tanks[idx].a, owner:idx});
 document.getElementById('p1-fire').onpointerdown = (e) => { e.preventDefault(); shoot(0); };
 document.getElementById('p2-fire').onpointerdown = (e) => { e.preventDefault(); shoot(1); };
-
 update();
 </script>
 </body>
