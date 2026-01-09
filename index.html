@@ -3,27 +3,35 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Tanks 3-Hit Battle</title>
+    <title>Tanks Final Pro</title>
     <style>
         body { margin: 0; background: #1a1a1a; overflow: hidden; touch-action: none; font-family: sans-serif; -webkit-user-select: none; }
         canvas { display: block; background: #000; }
-        .ui { position: absolute; width: 100%; color: white; display: flex; justify-content: space-around; top: 50%; transform: translateY(-50%); pointer-events: none; z-index: 100; font-size: 20px; font-weight: bold; opacity: 0.5; }
+        
+        /* Табло очков у границ экрана */
+        .ui { position: absolute; width: 100%; height: 100%; pointer-events: none; z-index: 100; }
+        .score { position: absolute; padding: 10px 20px; font-size: 22px; font-weight: bold; opacity: 0.7; }
+        #s1 { bottom: 10px; left: 50%; transform: translateX(-50%); color: #0f0; } /* Зеленый снизу по центру */
+        #s2 { top: 10px; left: 50%; transform: translateX(-50%); color: #f00; rotate: 180deg; } /* Красный сверху по центру */
         
         .joy-zone { position: absolute; width: 120px; height: 120px; background: rgba(255,255,255,0.05); border: 2px solid rgba(255,255,255,0.2); border-radius: 50%; z-index: 200; touch-action: none; }
         .stick { position: absolute; width: 45px; height: 45px; background: rgba(255,255,255,0.4); border-radius: 50%; top: 37px; left: 37px; pointer-events: none; }
         .btn-fire { position: absolute; width: 100px; height: 100px; border-radius: 50%; z-index: 200; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; border: 4px solid #fff; touch-action: none; }
 
-        /* Игрок 1 (Зеленый) */
-        #p1-joy { bottom: 40px; right: 30px; }            /* Джойстик переехал направо */
-        #p1-fire { bottom: 40px; left: 30px; background: rgba(0,255,0,0.3); border-color: #0f0; } /* Огонь налево */
+        /* Игрок 1 (Зеленый) - Джойстик СЛЕВА, Огонь СПРАВА */
+        #p1-joy { bottom: 40px; left: 30px; }
+        #p1-fire { bottom: 40px; right: 30px; background: rgba(0,255,0,0.3); border-color: #0f0; }
 
-        /* Игрок 2 (Красный) */
-        #p2-joy { top: 40px; left: 30px; transform: rotate(180deg); }  /* Джойстик налево */
-        #p2-fire { top: 40px; right: 30px; background: rgba(255,0,0,0.3); border-color: #f00; transform: rotate(180deg); } /* Огонь направо */
+        /* Игрок 2 (Красный) - Джойстик СПРАВА, Огонь СЛЕВА (относительно него) */
+        #p2-joy { top: 40px; left: 30px; transform: rotate(180deg); } 
+        #p2-fire { top: 40px; right: 30px; background: rgba(255,0,0,0.3); border-color: #f00; transform: rotate(180deg); }
     </style>
 </head>
 <body>
-    <div class="ui"><span id="s1" style="color:#0f0">Зеленый: 0</span><span id="s2" style="color:#f00">Красный: 0</span></div>
+    <div class="ui">
+        <div id="s2" class="score">Красный: 0</div>
+        <div id="s1" class="score">Зеленый: 0</div>
+    </div>
     <canvas id="g"></canvas>
     
     <div id="p1-joy" class="joy-zone"><div id="p1-stick" class="stick"></div></div>
@@ -37,8 +45,7 @@ const cvs = document.getElementById('g'); const ctx = cvs.getContext('2d');
 cvs.width = window.innerWidth; cvs.height = window.innerHeight;
 
 let bullets = [], explosions = [];
-// Укрытия отодвинуты от стен на 60px
-const gap = 60;
+const gap = 70; // Отступ от стены увеличен
 const walls = [
     {x: gap, y: cvs.height/2-70, w: 80, h: 15}, {x: gap, y: cvs.height/2+55, w: 80, h: 15}, {x: gap+80, y: cvs.height/2-70, w: 15, h: 140},
     {x: cvs.width-gap-95, y: cvs.height/2-70, w: 80, h: 15}, {x: cvs.width-gap-95, y: cvs.height/2+55, w: 80, h: 15}, {x: cvs.width-gap-15-80, y: cvs.height/2-70, w: 15, h: 140}
@@ -55,15 +62,19 @@ function drawTank(t) {
     ctx.fillStyle = 'rgba(0,0,0,0.4)'; ctx.beginPath(); ctx.arc(0, 0, 12, 0, 7); ctx.fill();
     ctx.fillStyle = '#888'; ctx.fillRect(15, -5, 25, 10); ctx.restore();
     
-    // Полоска здоровья
-    ctx.fillStyle = '#333'; ctx.fillRect(t.x-20, t.y-35, 40, 6);
+    // Полоска здоровья с окантовкой и закруглением
+    const bw = 44, bh = 8;
+    ctx.strokeStyle = '#555'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.roundRect(t.x - bw/2, t.y - 40, bw, bh, 4); ctx.stroke();
+    ctx.fillStyle = 'rgba(0,0,0,0.5)'; ctx.fill();
+    
     ctx.fillStyle = t.id === 0 ? '#0f0' : '#f00';
-    ctx.fillRect(t.x-20, t.y-35, (t.hp/3)*40, 6);
+    ctx.beginPath(); ctx.roundRect(t.x - bw/2 + 1, t.y - 39, (t.hp/3)*(bw-2), bh-2, 3); ctx.fill();
 }
 
 function update() {
     ctx.fillStyle = '#000'; ctx.fillRect(0,0,cvs.width,cvs.height);
-    ctx.fillStyle = '#555'; walls.forEach(w => ctx.fillRect(w.x, w.y, w.w, w.h));
+    ctx.fillStyle = '#444'; walls.forEach(w => ctx.fillRect(w.x, w.y, w.w, w.h));
 
     explosions.forEach((ex, i) => {
         ctx.beginPath(); ctx.arc(ex.x, ex.y, ex.r, 0, 7);
@@ -73,7 +84,7 @@ function update() {
 
     tanks.forEach(t => {
         if (Math.abs(t.dx) > 0.1 || Math.abs(t.dy) > 0.1) {
-            let nX = t.x + t.dx * 3.5; let nY = t.y + t.dy * 3.5;
+            let nX = t.x + t.dx * 3.2; let nY = t.y + t.dy * 3.2;
             let col = walls.some(w => nX+22 > w.x && nX-22 < w.x+w.w && nY+22 > w.y && nY-22 < w.y+w.h);
             if(!col) { t.x = nX; t.y = nY; }
             t.a = Math.atan2(t.dy, t.dx);
@@ -88,17 +99,15 @@ function update() {
 
         let hit = false;
         if(walls.some(w => b.x > w.x && b.x < w.x+w.w && b.y > w.y && b.y < w.y+w.h)) hit = true;
-        
         tanks.forEach(t => {
             if (b.owner !== t.id && Math.hypot(b.x-t.x, b.y-t.y) < 28) {
-                explosions.push({x:b.x, y:b.y, r:5, a:1});
                 t.hp--; 
                 if(t.hp <= 0) {
                     explosions.push({x:t.x, y:t.y, r:20, a:1});
                     tanks[b.owner].s++;
                     document.getElementById('s'+(b.owner+1)).innerText = (b.owner===0?'Зеленый: ':'Красный: ')+tanks[b.owner].s;
                     t.x = t.id===0?gap+30:cvs.width-gap-30; t.y = cvs.height/2; t.hp = 3;
-                }
+                } else { explosions.push({x:b.x, y:b.y, r:5, a:1}); }
                 hit = true;
             }
         });
