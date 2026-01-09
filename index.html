@@ -3,44 +3,49 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Tanks Multitouch Fixed</title>
+    <title>Tanks Side Battle</title>
     <style>
         body { margin: 0; background: #1a1a1a; overflow: hidden; touch-action: none; font-family: sans-serif; -webkit-user-select: none; }
         canvas { display: block; background: #000; }
-        .ui { position: absolute; width: 100%; color: white; display: flex; justify-content: space-around; top: 48%; pointer-events: none; z-index: 100; font-size: 18px; opacity: 0.8; }
+        .ui { position: absolute; width: 100%; color: white; display: flex; justify-content: space-around; top: 20px; pointer-events: none; z-index: 100; font-size: 20px; font-weight: bold; }
         
-        .joy-zone { position: absolute; width: 120px; height: 120px; background: rgba(255,255,255,0.05); border: 2px solid rgba(255,255,255,0.2); border-radius: 50%; z-index: 200; pointer-events: auto; touch-action: none; }
-        .stick { position: absolute; width: 50px; height: 50px; background: rgba(255,255,255,0.3); border-radius: 50%; top: 35px; left: 35px; pointer-events: none; }
-        .btn-fire { position: absolute; width: 90px; height: 90px; border-radius: 50%; z-index: 200; pointer-events: auto; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; border: 3px solid #fff; touch-action: none; }
+        .joy-zone { position: absolute; width: 130px; height: 130px; background: rgba(255,255,255,0.05); border: 2px solid rgba(255,255,255,0.2); border-radius: 50%; z-index: 200; touch-action: none; }
+        .stick { position: absolute; width: 50px; height: 50px; background: rgba(255,255,255,0.4); border-radius: 50%; top: 40px; left: 40px; pointer-events: none; }
+        .btn-fire { position: absolute; width: 100px; height: 100px; border-radius: 50%; z-index: 200; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; border: 4px solid #fff; touch-action: none; }
 
-        /* Игрок 2 (Красный) - СВЕРХУ */
-        #p2-joy { top: 20px; left: 20px; transform: rotate(180deg); }
-        #p2-fire { top: 35px; right: 20px; background: rgba(255,0,0,0.3); border-color: #f00; transform: rotate(180deg); }
+        /* Игрок 1 (Зеленый) - СЛЕВА */
+        #p1-joy { bottom: 30px; left: 30px; }
+        #p1-fire { bottom: 180px; left: 45px; background: rgba(0,255,0,0.3); border-color: #0f0; }
 
-        /* Игрок 1 (Зеленый) - СНИЗУ */
-        #p1-joy { bottom: 20px; right: 20px; }
-        #p1-fire { bottom: 35px; left: 20px; background: rgba(0,255,0,0.3); border-color: #0f0; }
+        /* Игрок 2 (Красный) - СПРАВА */
+        #p2-joy { bottom: 30px; right: 30px; }
+        #p2-fire { bottom: 180px; right: 45px; background: rgba(255,0,0,0.3); border-color: #f00; }
     </style>
 </head>
 <body>
-    <div class="ui"><span id="s2">Красный: 0</span><span id="s1">Зеленый: 0</span></div>
+    <div class="ui"><span id="s1" style="color:#0f0">Зеленый: 0</span><span id="s2" style="color:#f00">Красный: 0</span></div>
     <canvas id="g"></canvas>
     
-    <div id="p2-joy" class="joy-zone"><div id="p2-stick" class="stick"></div></div>
-    <div id="p2-fire" class="btn-fire">ОГОНЬ</div>
-
     <div id="p1-joy" class="joy-zone"><div id="p1-stick" class="stick"></div></div>
     <div id="p1-fire" class="btn-fire">ОГОНЬ</div>
+
+    <div id="p2-joy" class="joy-zone"><div id="p2-stick" class="stick"></div></div>
+    <div id="p2-fire" class="btn-fire">ОГОНЬ</div>
 
 <script>
 const cvs = document.getElementById('g'); const ctx = cvs.getContext('2d');
 cvs.width = window.innerWidth; cvs.height = window.innerHeight;
 
 let bullets = [];
+let explosions = [];
 let tanks = [
-    { x: cvs.width/2, y: cvs.height-100, c: 'green', a: -Math.PI/2, s: 0, dx:0, dy:0, id: 0 },
-    { x: cvs.width/2, y: 100, c: 'red', a: Math.PI/2, s: 0, dx:0, dy:0, id: 1 }
+    { x: 150, y: cvs.height/2, c: 'green', a: 0, s: 0, dx:0, dy:0, id: 0 },
+    { x: cvs.width-150, y: cvs.height/2, c: 'red', a: Math.PI, s: 0, dx:0, dy:0, id: 1 }
 ];
+
+function createExplosion(x, y) {
+    explosions.push({x, y, r: 10, alpha: 1});
+}
 
 function drawTank(t) {
     ctx.save(); ctx.translate(t.x, t.y); ctx.rotate(t.a);
@@ -55,9 +60,20 @@ function drawTank(t) {
 function update() {
     ctx.fillStyle = '#000'; ctx.fillRect(0,0,cvs.width,cvs.height);
     
+    // Отрисовка взрывов
+    for(let i=explosions.length-1; i>=0; i--) {
+        let ex = explosions[i];
+        ctx.beginPath();
+        ctx.arc(ex.x, ex.y, ex.r, 0, 7);
+        ctx.fillStyle = `rgba(255, 165, 0, ${ex.alpha})`;
+        ctx.fill();
+        ex.r += 2; ex.alpha -= 0.05;
+        if(ex.alpha <= 0) explosions.splice(i, 1);
+    }
+
     tanks.forEach((t) => {
         if (Math.abs(t.dx) > 0.1 || Math.abs(t.dy) > 0.1) {
-            t.x += t.dx * 6; t.y += t.dy * 6;
+            t.x += t.dx * 3.5; t.y += t.dy * 3.5; // Скорость замедлена
             t.a = Math.atan2(t.dy, t.dx);
         }
         t.x = Math.max(25, Math.min(cvs.width-25, t.x));
@@ -73,11 +89,12 @@ function update() {
         let hit = false;
         tanks.forEach((t) => {
             if (b.owner !== t.id && Math.hypot(b.x - t.x, b.y - t.y) < 30) {
+                createExplosion(t.x, t.y);
                 tanks[b.owner].s++;
                 document.getElementById('s'+(b.owner === 0 ? '1' : '2')).innerText = 
                     (b.owner === 0 ? 'Зеленый: ' : 'Красный: ') + tanks[b.owner].s;
-                t.x = t.id === 0 ? cvs.width/2 : cvs.width/2;
-                t.y = t.id === 0 ? cvs.height-100 : 100;
+                t.x = t.id === 0 ? 150 : cvs.width-150;
+                t.y = cvs.height/2;
                 hit = true;
             }
         });
@@ -99,7 +116,7 @@ function setupJoystick(joyId, stickId, tankIdx) {
         const dist = Math.min(45, Math.hypot(x, y));
         const angle = Math.atan2(y, x);
 
-        stick.style.transform = `translate(${Math.cos(angle)*dist}px, ${Math.sin(angle)*dist}px)`;
+        stick.style.transform = `translate(${x * (dist/Math.hypot(x,y))}px, ${y * (dist/Math.hypot(x,y))}px)`;
         tanks[tankIdx].dx = Math.cos(angle) * (dist/45);
         tanks[tankIdx].dy = Math.sin(angle) * (dist/45);
     };
