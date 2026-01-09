@@ -3,45 +3,62 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Tanks POV Tactical Final</title>
+    <title>Tactical Tanks Pro</title>
     <style>
         body { margin: 0; background: #000; overflow: hidden; touch-action: none; font-family: sans-serif; -webkit-user-select: none; }
         canvas { display: block; }
+        
+        /* Фиксация ориентации */
+        @media screen and (orientation: landscape) {
+            body::after {
+                content: "Пожалуйста, переверните устройство в вертикальный режим";
+                position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+                background: #111; color: white; display: flex; align-items: center;
+                justify-content: center; text-align: center; z-index: 9999; padding: 20px;
+            }
+        }
+
         #setup-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #111; z-index: 500; display: flex; flex-direction: column; justify-content: center; align-items: center; color: white; gap: 10px; }
         .player-box { padding: 12px; border-radius: 15px; background: rgba(255,255,255,0.05); width: 85%; text-align: center; border: 2px solid #333; }
         .p1-box { border-color: #0f0; }
         .p2-box { border-color: #f00; transform: rotate(180deg); }
         .btn-toggle { padding: 8px 12px; margin: 4px; font-size: 11px; cursor: pointer; background: #222; color: #aaa; border: 1px solid #444; border-radius: 6px; }
         .active { background: #444; color: #fff; border-color: #fff; font-weight: bold; }
+        
         #map-preview { width: 140px; height: 180px; border: 2px solid #444; position: relative; background: #000; border-radius: 10px; margin: 5px 0; }
         .wall-p { position: absolute; border: 2px solid #433; width: 60px; height: 30px; left: 38px; }
         .w-top { top: 0; border-top: none; }
         .w-bot { bottom: 0; border-bottom: none; }
-        #start-btn { padding: 15px 50px; font-size: 18px; background: #fff; color: #000; border: none; border-radius: 50px; cursor: pointer; font-weight: bold; }
+
         .score { position: absolute; width: 100%; text-align: center; font-size: 20px; font-weight: bold; z-index: 100; pointer-events: none; }
         #s1 { bottom: 140px; color: #0f0; }
         #s2 { top: 140px; color: #f00; transform: rotate(180deg); }
-        .joy-zone, .btn-fire { position: fixed; border-radius: 50%; z-index: 200; touch-action: none; border: none; visibility: hidden; }
+        
+        .joy-zone, .btn-fire { position: fixed; border-radius: 50%; z-index: 200; touch-action: none; visibility: hidden; }
         .joy-zone { width: 100px; height: 100px; background: rgba(255,255,255,0.08); }
         .stick { position: absolute; width: 40px; height: 40px; border-radius: 50%; top: 30px; left: 30px; pointer-events: none; }
-        .btn-fire { width: 90px; height: 90px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 14px; }
+        .btn-fire { width: 90px; height: 90px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 14px; border: 2px solid rgba(255,255,255,0.1); }
         .btn-fire span { transform: rotate(180deg); display: inline-block; }
+        
         #p1-stick { background: #0f0; }
         #p2-stick { background: #f00; }
-        #p1-fire { background: rgba(0,255,0,0.25); color: #0f0; }
-        #p2-fire { background: rgba(255,0,0,0.25); color: #f00; }
+        #p1-fire { background: rgba(0,255,0,0.2); color: #0f0; }
+        #p2-fire { background: rgba(255,0,0,0.2); color: #f00; }
     </style>
 </head>
 <body>
+
     <div id="setup-overlay">
         <div class="player-box p2-box"><b>КРАСНЫЙ</b><br><button class="btn-toggle active" onclick="setCfg(1,'j','L',event)">ДЖОЙСТИК СЛЕВА</button><button class="btn-toggle active" onclick="setCfg(1,'f','R',event)">ОГОНЬ СПРАВА</button></div>
         <div id="map-preview"><div class="wall-p w-top"></div><div class="wall-p w-bot"></div></div>
-        <button id="start-btn" onclick="startGame()">В БОЙ</button>
+        <button style="padding:15px 50px; border-radius:50px; font-weight:bold;" onclick="startGame()">В БОЙ</button>
         <div class="player-box p1-box"><b>ЗЕЛЕНЫЙ</b><br><button class="btn-toggle active" onclick="setCfg(0,'j','L',event)">ДЖОЙСТИК СЛЕВА</button><button class="btn-toggle active" onclick="setCfg(0,'f','R',event)">ОГОНЬ СПРАВА</button></div>
     </div>
-    <div id="s2" class="score">Красный: 0</div>
-    <div id="s1" class="score">Зеленый: 0</div>
+
+    <div id="s2" class="score">0</div>
+    <div id="s1" class="score">0</div>
     <canvas id="g"></canvas>
+    
     <div id="p1-fire" class="btn-fire"><span>ОГОНЬ</span></div>
     <div id="p1-joy" class="joy-zone"><div id="p1-stick" class="stick"></div></div>
     <div id="p2-fire" class="btn-fire"><span>ОГОНЬ</span></div>
@@ -53,12 +70,12 @@ let gameStarted = false;
 let cfg = [ {j:'L', f:'R'}, {j:'L', f:'R'} ];
 let bullets = [], explosions = [], surrenderAnims = [];
 let tanks = [
-    { x: 0, y: 0, c: 'green', a: -Math.PI/2, s: 0, hp: 3, dx:0, dy:0, id: 0, dead: false, dc: 0 },
-    { x: 0, y: 0, c: 'red', a: Math.PI/2, s: 0, hp: 3, dx:0, dy:0, id: 1, dead: false, dc: 0 }
+    { x: 0, y: 0, c: '#2e7d32', a: -Math.PI/2, s: 0, hp: 3, dx:0, dy:0, id: 0, dead: false, dc: 0 },
+    { x: 0, y: 0, c: '#c62828', a: Math.PI/2, s: 0, hp: 3, dx:0, dy:0, id: 1, dead: false, dc: 0 }
 ];
 
-function setCfg(p, type, side, e) {
-    cfg[p][type] = side;
+function setCfg(p, t, s, e) {
+    cfg[p][t] = s;
     e.target.parentElement.querySelectorAll('.btn-toggle').forEach(b => b.classList.remove('active'));
     e.target.classList.add('active');
 }
@@ -87,7 +104,7 @@ function drawHuman(a) {
     ctx.save(); ctx.translate(a.x,a.y); if(a.id===1) ctx.rotate(Math.PI);
     ctx.strokeStyle="white"; ctx.fillStyle="white"; ctx.lineWidth=2;
     ctx.beginPath();ctx.moveTo(-4,8);ctx.lineTo(0,0);ctx.lineTo(4,8);ctx.stroke();
-    ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(0,-12);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(0,-12);ctx.lineTo(0,0);ctx.stroke();
     ctx.beginPath();ctx.arc(0,-16,4,0,7);ctx.fill();
     ctx.beginPath();ctx.moveTo(-6,-8);ctx.lineTo(6,-8);ctx.stroke();
     ctx.beginPath();ctx.moveTo(6,-8);ctx.lineTo(12,-30+wave);ctx.stroke();
@@ -96,9 +113,20 @@ function drawHuman(a) {
 
 function drawTank(t) {
     ctx.save(); ctx.translate(t.x, t.y); ctx.rotate(t.a);
-    ctx.fillStyle = t.dead ? '#111' : t.c;
-    ctx.beginPath(); ctx.roundRect(-20, -18, 40, 36, 8); ctx.fill();
-    ctx.fillStyle = t.dead ? '#000' : '#777'; ctx.fillRect(12, -4, 20, 8);
+    let color = t.dead ? '#111' : t.c;
+    // Гусеницы
+    ctx.fillStyle = '#111';
+    ctx.fillRect(-20, -18, 40, 8); ctx.fillRect(-20, 10, 40, 8);
+    // Насечки на гусеницах
+    ctx.strokeStyle = '#222'; ctx.lineWidth = 2;
+    for(let i=-16; i<20; i+=8) { ctx.beginPath(); ctx.moveTo(i, -18); ctx.lineTo(i, -10); ctx.stroke(); ctx.beginPath(); ctx.moveTo(i, 10); ctx.lineTo(i, 18); ctx.stroke(); }
+    // Корпус
+    ctx.fillStyle = color; ctx.beginPath(); ctx.roundRect(-16, -12, 32, 24, 4); ctx.fill();
+    // Башня
+    ctx.fillStyle = t.dead ? '#000' : color; ctx.beginPath(); ctx.arc(-2, 0, 9, 0, 7); ctx.fill();
+    ctx.strokeStyle = 'rgba(0,0,0,0.3)'; ctx.lineWidth = 1; ctx.stroke();
+    // Дуло
+    ctx.fillStyle = t.dead ? '#000' : '#444'; ctx.fillRect(6, -3, 20, 6);
     ctx.restore();
     if(!t.dead) {
         ctx.strokeStyle = '#555'; ctx.lineWidth = 1; ctx.fillStyle = '#222';
@@ -115,22 +143,11 @@ function update() {
         {x:cvs.width/2-60, y:cvs.height-120, w:10, h:50}, {x:cvs.width/2+50, y:cvs.height-120, w:10, h:50}, {x:cvs.width/2-60, y:cvs.height-120, w:120, h:10},
         {x:cvs.width/2-60, y:70, w:10, h:50}, {x:cvs.width/2+50, y:70, w:10, h:50}, {x:cvs.width/2-60, y:110, w:120, h:10}
     ];
-    ctx.fillStyle = '#433'; walls.forEach(w => ctx.fillRect(w.x, w.y, w.w, w.h));
+    ctx.fillStyle = '#3e2723'; walls.forEach(w => { ctx.fillRect(w.x, w.y, w.w, w.h); ctx.strokeStyle = '#261a15'; ctx.strokeRect(w.x, w.y, w.w, w.h); });
     
-    surrenderAnims = surrenderAnims.filter(a => {
-        drawHuman(a);
-        if(Date.now()-a.t > 3000) {
-            tanks[a.id].dead = false; tanks[a.id].hp = 3;
-            tanks[a.id].x = cvs.width/2; tanks[a.id].y = a.id===0?cvs.height-70:70;
-            return false;
-        }
-        return true;
-    });
+    surrenderAnims = surrenderAnims.filter(a => { drawHuman(a); if(Date.now()-a.t > 3000) { tanks[a.id].dead = false; tanks[a.id].hp = 3; tanks[a.id].x = cvs.width/2; tanks[a.id].y = a.id===0?cvs.height-70:70; return false; } return true; });
 
-    explosions.forEach((ex, i) => {
-        ctx.beginPath(); ctx.arc(ex.x, ex.y, ex.r, 0, 7); ctx.fillStyle = `rgba(255, ${120+ex.r}, 0, ${ex.a})`; ctx.fill();
-        ex.r += 2; ex.a -= 0.05; if(ex.a <= 0) explosions.splice(i, 1);
-    });
+    explosions.forEach((ex, i) => { ctx.beginPath(); ctx.arc(ex.x, ex.y, ex.r, 0, 7); ctx.fillStyle = `rgba(255, ${120+ex.r}, 0, ${ex.a})`; ctx.fill(); ex.r += 2; ex.a -= 0.05; if(ex.a <= 0) explosions.splice(i, 1); });
 
     tanks.forEach(t => {
         if (!t.dead && (Math.abs(t.dx) > 0.05 || Math.abs(t.dy) > 0.05)) {
@@ -144,7 +161,7 @@ function update() {
 
     for (let i = bullets.length-1; i >= 0; i--) {
         let b = bullets[i]; b.x += Math.cos(b.a)*8; b.y += Math.sin(b.a)*8;
-        ctx.fillStyle = 'yellow'; ctx.beginPath(); ctx.arc(b.x, b.y, 3, 0, 7); ctx.fill();
+        ctx.fillStyle = '#fff176'; ctx.beginPath(); ctx.arc(b.x, b.y, 3, 0, 7); ctx.fill();
         let hit = false;
         if(walls.some(w => b.x > w.x && b.x < w.x+w.w && b.y > w.y && b.y < w.y+w.h)) { hit = true; explosions.push({x: b.x, y: b.y, r: 5, a: 1}); }
         tanks.forEach(t => {
@@ -152,13 +169,9 @@ function update() {
                 t.hp--; hit = true; explosions.push({x: b.x, y: b.y, r: 10, a: 1});
                 if(t.hp <= 0) {
                     t.dc++; tanks[b.owner].s++;
-                    document.getElementById('s'+(b.owner+1)).innerText = (b.owner===0?'Зеленый: ':'Красный: ') + tanks[b.owner].s;
-                    if(t.dc % 10 === 0) {
-                        t.dead = true; surrenderAnims.push({x:t.x, y:t.y, id:t.id, t:Date.now()});
-                    } else {
-                        t.hp = 3; t.x = cvs.width/2; t.y = t.id===0?cvs.height-70:70;
-                        explosions.push({x: t.x, y: t.y, r: 25, a: 1});
-                    }
+                    document.getElementById('s'+(b.owner+1)).innerText = tanks[b.owner].s;
+                    if(t.dc % 10 === 0) { t.dead = true; surrenderAnims.push({x:t.x, y:t.y, id:t.id, t:Date.now()}); }
+                    else { t.hp = 3; t.x = cvs.width/2; t.y = t.id===0?cvs.height-70:70; explosions.push({x: t.x, y: t.y, r: 25, a: 1}); }
                 }
             }
         });
@@ -174,7 +187,9 @@ function setupJoy(joyId, idx) {
         if(!joy.hasPointerCapture(e.pointerId)) return;
         const r = joy.getBoundingClientRect();
         const xRaw = e.clientX - (r.left + 50); const yRaw = e.clientY - (r.top + 50);
-        const x = (idx === 1) ? -xRaw : xRaw; const y = (idx === 1) ? -yRaw : yRaw;
+        // Исправленная инверсия Красного (idx 1)
+        const x = (idx === 1) ? -xRaw : xRaw;
+        const y = (idx === 1) ? -yRaw : yRaw;
         const d = Math.min(35, Math.hypot(x,y)); const a = Math.atan2(y,x);
         stick.style.transform = `translate(${xRaw*(d/Math.hypot(xRaw,yRaw)||0)}px, ${yRaw*(d/Math.hypot(xRaw,yRaw)||0)}px)`;
         tanks[idx].dx = Math.cos(a)*(d/35); tanks[idx].dy = Math.sin(a)*(d/35);
