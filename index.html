@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Tank Game</title>
+    <style>
+        body { margin: 0; background: #000; color: #fff; display: flex; align-items: center; justify-content: center; height: 100vh; overflow: hidden; }
+        canvas { border: 2px solid #fff; background: #111; }
+    </style>
+</head>
+<body>
+    <canvas id="g" width="400" height="400"></canvas>
+    <script>
+        const c = document.getElementById('g').getContext('2d');
+        c.fillStyle = 'green';
+        c.fillRect(180, 180, 40, 40); // Ваш танк
+        c.fillStyle = 'white';
+        c.fillText("ИГРА ЗАПУЩЕНА", 150, 150);
+    </script>
+</body>
+</html>
