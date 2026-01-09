@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Tanks Stick Fixed</title>
+    <title>Tanks Fixed Final</title>
     <style>
         body { margin: 0; background: #1a1a1a; overflow: hidden; touch-action: none; font-family: sans-serif; -webkit-user-select: none; }
         canvas { display: block; background: #000; }
@@ -16,14 +16,14 @@
         .stick { position: absolute; width: 45px; height: 45px; border-radius: 50%; top: 37px; left: 37px; pointer-events: none; }
         .btn-fire { position: fixed; width: 100px; height: 100px; border-radius: 50%; z-index: 200; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; border: 4px solid #fff; touch-action: none; }
 
-        /* Зеленый (P1) - Снизу */
-        #p1-joy { bottom: 30px; left: 30px; }
-        #p1-fire { bottom: 30px; right: 30px; background: rgba(0,255,0,0.4); border-color: #0f0; }
+        /* --- ЗЕЛЕНЫЙ ИГРОК (ВНИЗУ) --- */
+        #p1-joy { bottom: 30px; right: 30px; } /* Джойстик теперь справа */
+        #p1-fire { bottom: 30px; left: 30px; background: rgba(0,255,0,0.4); border-color: #0f0; } /* Огонь слева */
         #p1-stick { background: #0f0; box-shadow: 0 0 15px #0f0; }
 
-        /* Красный (P2) - Сверху. Rotate(180) убран, чтобы не инвертировать координаты */
-        #p2-joy { top: 30px; right: 30px; } 
-        #p2-fire { top: 30px; left: 30px; background: rgba(255,0,0,0.4); border-color: #f00; transform: rotate(180deg); }
+        /* --- КРАСНЫЙ ИГРОК (ВВЕРХУ) --- */
+        #p2-joy { top: 30px; left: 30px; } /* Джойстик слева (для него справа) */
+        #p2-fire { top: 30px; right: 30px; background: rgba(255,0,0,0.4); border-color: #f00; transform: rotate(180deg); } /* Огонь справа (для него слева) */
         #p2-stick { background: #f00; box-shadow: 0 0 15px #f00; }
     </style>
 </head>
@@ -47,16 +47,18 @@ let bullets = [], explosions = [];
 const gap = 80;
 
 let tanks = [
-    { x: gap + 30, y: cvs.height/2, c: 'green', a: 0, s: 0, hp: 3, dx:0, dy:0, id: 0 },
-    { x: cvs.width - gap - 30, y: cvs.height/2, c: 'red', a: Math.PI, s: 0, hp: 3, dx:0, dy:0, id: 1 }
+    { x: gap + 30, y: 0, c: 'green', a: 0, s: 0, hp: 3, dx:0, dy:0, id: 0 },
+    { x: 0, y: 0, c: 'red', a: Math.PI, s: 0, hp: 3, dx:0, dy:0, id: 1 }
 ];
+tanks[0].y = cvs.height/2;
+tanks[1].x = cvs.width - gap - 30;
+tanks[1].y = cvs.height/2;
 
 function drawTank(t) {
     ctx.save(); ctx.translate(t.x, t.y); ctx.rotate(t.a);
     ctx.fillStyle = t.c; ctx.beginPath(); ctx.roundRect(-24, -20, 48, 40, 12); ctx.fill();
     ctx.fillStyle = 'rgba(0,0,0,0.4)'; ctx.beginPath(); ctx.arc(0, 0, 12, 0, 7); ctx.fill();
     ctx.fillStyle = '#888'; ctx.fillRect(15, -5, 25, 10); ctx.restore();
-    
     const bw = 44, bh = 8;
     ctx.strokeStyle = '#555'; ctx.lineWidth = 1;
     ctx.beginPath(); ctx.roundRect(t.x - bw/2, t.y - 40, bw, bh, 4); ctx.stroke();
@@ -86,8 +88,7 @@ function update() {
             if(!col) { t.x = nX; t.y = nY; }
             t.a = Math.atan2(t.dy, t.dx);
         }
-        t.x = Math.max(22, Math.min(cvs.width-22, t.x));
-        t.y = Math.max(22, Math.min(cvs.height-22, t.y));
+        t.x = Math.max(22, Math.min(cvs.width-22, t.x)); t.y = Math.max(22, Math.min(cvs.height-22, t.y));
         drawTank(t);
     });
 
@@ -115,37 +116,38 @@ function update() {
 
 function setupJoy(joyId, stickId, idx) {
     const joy = document.getElementById(joyId); const stick = document.getElementById(stickId);
-    const move = (clientX, clientY) => {
+    
+    const handleMove = (e) => {
+        if (!joy.hasPointerCapture(e.pointerId)) return;
         const r = joy.getBoundingClientRect(); 
-        const x = clientX - r.left - 60; 
-        const y = clientY - r.top - 60;
-        const d = Math.min(45, Math.hypot(x,y)); const a = Math.atan2(y,x);
+        const xRaw = e.clientX - r.left - 60; 
+        const yRaw = e.clientY - r.top - 60;
         
-        // Визуально шарик всегда следует за пальцем
-        stick.style.transform = `translate(${Math.cos(a)*d}px, ${Math.sin(a)*d}px)`;
+        // Для красного (idx 1) инвертируем координаты, так как он "вверх ногами"
+        const x = idx === 1 ? -xRaw : xRaw;
+        const y = idx === 1 ? -yRaw : yRaw;
+
+        const d = Math.min(45, Math.hypot(x, y)); 
+        const a = Math.atan2(y, x);
         
-        // Для красного танка (idx 1) инвертируем вектор управления, 
-        // так как он смотрит на экран с другой стороны
-        if (idx === 1) {
-            tanks[idx].dx = -Math.cos(a)*(d/45); 
-            tanks[idx].dy = -Math.sin(a)*(d/45);
-        } else {
-            tanks[idx].dx = Math.cos(a)*(d/45); 
-            tanks[idx].dy = Math.sin(a)*(d/45);
-        }
+        // Визуальное смещение шарика (всегда под пальцем игрока)
+        stick.style.transform = `translate(${xRaw * (d/Math.hypot(x,y) || 0)}px, ${yRaw * (d/Math.hypot(x,y) || 0)}px)`;
+        
+        tanks[idx].dx = Math.cos(a) * (d/45);
+        tanks[idx].dy = Math.sin(a) * (d/45);
     };
 
-    const handlePointer = (e) => {
-        if (e.type === 'pointerup') {
-            stick.style.transform = ''; tanks[idx].dx = 0; tanks[idx].dy = 0;
-            return;
-        }
-        move(e.clientX, e.clientY);
-    };
-
-    joy.addEventListener('pointerdown', (e) => { joy.setPointerCapture(e.pointerId); handlePointer(e); });
-    joy.addEventListener('pointermove', (e) => { if(joy.hasPointerCapture(e.pointerId)) handlePointer(e); });
-    joy.addEventListener('pointerup', handlePointer);
+    joy.addEventListener('pointerdown', (e) => {
+        joy.setPointerCapture(e.pointerId);
+        handleMove(e);
+    });
+    joy.addEventListener('pointermove', handleMove);
+    joy.addEventListener('pointerup', (e) => {
+        joy.releasePointerCapture(e.pointerId);
+        stick.style.transform = ''; 
+        tanks[idx].dx = 0; 
+        tanks[idx].dy = 0;
+    });
 }
 
 setupJoy('p1-joy', 'p1-stick', 0);
