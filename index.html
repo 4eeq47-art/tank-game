@@ -3,100 +3,90 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Tanks 2 Player</title>
+    <title>Tanks 4-Way</title>
     <style>
-        body { margin: 0; background: #222; overflow: hidden; font-family: sans-serif; touch-action: none; }
-        canvas { display: block; background: #000; margin: 0 auto; border: 4px solid #444; }
+        body { margin: 0; background: #000; overflow: hidden; touch-action: none; font-family: sans-serif; }
+        canvas { display: block; background: #111; }
+        .ui { position: absolute; width: 100%; color: white; display: flex; justify-content: space-around; padding: 5px; pointer-events: none; z-index: 10; font-size: 14px; }
         .controls { position: absolute; width: 100%; height: 100%; pointer-events: none; }
-        .btn { position: absolute; width: 80px; height: 80px; background: rgba(255,255,255,0.2); 
-               border-radius: 50%; pointer-events: auto; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; }
-        /* Игрок 1 (Зеленый) - Слева */
-        #p1-up { bottom: 120px; left: 100px; }
-        #p1-down { bottom: 20px; left: 100px; }
-        #p1-fire { bottom: 70px; left: 200px; background: rgba(0,255,0,0.3); }
-        /* Игрок 2 (Красный) - Справа */
-        #p2-up { top: 20px; right: 100px; }
-        #p2-down { top: 120px; right: 100px; }
-        #p2-fire { top: 70px; right: 200px; background: rgba(255,0,0,0.3); }
+        .joy { position: absolute; width: 160px; height: 160px; pointer-events: auto; }
+        .btn-move { position: absolute; width: 50px; height: 50px; background: rgba(255,255,255,0.1); border: 1px solid #555; border-radius: 10px; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 12px; }
+        .btn-fire { position: absolute; width: 70px; height: 70px; border-radius: 50%; pointer-events: auto; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 12px; border: 2px solid #fff; }
+        
+        /* Игрок 1 (Зеленый) - СНИЗУ */
+        #p1-joy { bottom: 20px; left: 10px; }
+        #p1-fire { bottom: 65px; left: 180px; background: rgba(0,200,0,0.4); }
+        
+        /* Игрок 2 (Красный) - СВЕРХУ (перевернуто для удобства) */
+        #p2-joy { top: 20px; right: 10px; transform: rotate(180deg); }
+        #p2-fire { top: 65px; right: 180px; background: rgba(200,0,0,0.4); }
+
+        /* Позиции стрелок внутри джойстика */
+        .up { top: 0; left: 55px; } .down { bottom: 0; left: 55px; }
+        .left { top: 55px; left: 0; } .right { top: 55px; right: 0; }
     </style>
 </head>
 <body>
-    <canvas id="game"></canvas>
+    <div class="ui"><span id="s2">Красный: 0</span><span id="s1">Зеленый: 0</span></div>
+    <canvas id="g"></canvas>
     <div class="controls">
-        <div class="btn" id="p1-up">↑</div><div class="btn" id="p1-down">↓</div><div class="btn" id="p1-fire">ОГОНЬ</div>
-        <div class="btn" id="p2-up">↓</div><div class="btn" id="p2-down">↑</div><div class="btn" id="p2-fire">ОГОНЬ</div>
+        <div id="p1-joy" class="joy">
+            <div class="btn-move up" id="p1-u">▲</div><div class="btn-move down" id="p1-d">▼</div>
+            <div class="btn-move left" id="p1-l">◀</div><div class="btn-move right" id="p1-r">▶</div>
+        </div>
+        <div id="p1-fire" class="btn-fire">ОГОНЬ</div>
+        <div id="p2-joy" class="joy">
+            <div class="btn-move up" id="p2-u">▲</div><div class="btn-move down" id="p2-d">▼</div>
+            <div class="btn-move left" id="p2-l">◀</div><div class="btn-move right" id="p2-r">▶</div>
+        </div>
+        <div id="p2-fire" class="btn-fire">ОГОНЬ</div>
     </div>
-
 <script>
-const canvas = document.getElementById('game');
-const ctx = canvas.getContext('2d');
-canvas.width = window.innerWidth;
-canvas.height = window.innerHeight;
-
-let tanks = [
-    { x: 100, y: canvas.height/2, color: 'green', angle: 0, score: 0 },
-    { x: canvas.width-100, y: canvas.height/2, color: 'red', angle: Math.PI, score: 0 }
-];
+const cvs = document.getElementById('g'); const ctx = cvs.getContext('2d');
+cvs.width = window.innerWidth; cvs.height = window.innerHeight;
 let bullets = [];
-
+let tanks = [
+    { x: cvs.width/2, y: cvs.height-120, c: 'green', a: -Math.PI/2, s: 0 },
+    { x: cvs.width/2, y: 120, c: 'red', a: Math.PI/2, s: 0 }
+];
 function draw() {
-    ctx.fillStyle = 'black';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
+    ctx.fillStyle = '#111'; ctx.fillRect(0,0,cvs.width,cvs.height);
     tanks.forEach(t => {
-        ctx.save();
-        ctx.translate(t.x, t.y);
-        ctx.rotate(t.angle);
-        ctx.fillStyle = t.color;
-        ctx.fillRect(-20, -15, 40, 30);
-        ctx.fillStyle = 'gray';
-        ctx.fillRect(0, -4, 30, 8);
-        ctx.restore();
+        ctx.save(); ctx.translate(t.x, t.y); ctx.rotate(t.a);
+        ctx.fillStyle = t.c; ctx.fillRect(-20,-15,40,30);
+        ctx.fillStyle = '#999'; ctx.fillRect(10,-4,25,8); ctx.restore();
     });
-
     bullets.forEach((b, i) => {
-        b.x += Math.cos(b.angle) * 7;
-        b.y += Math.sin(b.angle) * 7;
-        ctx.fillStyle = 'yellow';
-        ctx.beginPath();
-        ctx.arc(b.x, b.y, 4, 0, Math.PI*2);
-        ctx.fill();
-
+        b.x += Math.cos(b.a) * 7; b.y += Math.sin(b.a) * 7;
+        ctx.fillStyle = 'yellow'; ctx.beginPath(); ctx.arc(b.x,b.y,4,0,7); ctx.fill();
         tanks.forEach((t, ti) => {
             if(Math.hypot(b.x-t.x, b.y-t.y) < 25) {
-                tanks[ti === 0 ? 1 : 0].score++;
-                t.x = ti === 0 ? 100 : canvas.width-100;
-                t.y = canvas.height/2;
+                tanks[ti===0?1:0].s++;
+                document.getElementById('s'+(ti===0?2:1)).innerText = (ti===0?'Красный: ':'Зеленый: ') + tanks[ti===0?1:0].s;
+                t.x = ti===0?cvs.width/2:cvs.width/2; t.y = ti===0?cvs.height-120:120;
                 bullets.splice(i, 1);
             }
         });
+        if(b.x<0||b.x>cvs.width||b.y<0||b.y>cvs.height) bullets.splice(i,1);
     });
-
-    ctx.fillStyle = 'white';
-    ctx.font = '20px Arial';
-    ctx.fillText(`Зеленый: ${tanks[0].score}`, 20, 30);
-    ctx.fillText(`Красный: ${tanks[1].score}`, canvas.width-150, 30);
     requestAnimationFrame(draw);
 }
-
-function move(ti, dir) {
-    tanks[ti].x += Math.cos(tanks[ti].angle) * dir * 5;
-    tanks[ti].y += Math.sin(tanks[ti].angle) * dir * 5;
-}
-
-function fire(ti) {
-    bullets.push({ x: tanks[ti].x, y: tanks[ti].y, angle: tanks[ti].angle });
-}
-
-// Управление касанием
-const setupBtn = (id, fn) => document.getElementById(id).addEventListener('touchstart', (e) => { e.preventDefault(); fn(); });
-setupBtn('p1-up', () => move(0, 1));
-setupBtn('p1-down', () => move(0, -1));
-setupBtn('p1-fire', () => fire(0));
-setupBtn('p2-up', () => move(1, 1));
-setupBtn('p2-down', () => move(1, -1));
-setupBtn('p2-fire', () => fire(1));
-
+const move = (i, nx, ny, angle) => {
+    tanks[i].x += nx * 5; tanks[i].y += ny * 5; tanks[i].a = angle;
+};
+const act = (id, f) => {
+    const b = document.getElementById(id);
+    b.ontouchstart = (e) => { e.preventDefault(); f(); b.style.background = 'rgba(255,255,255,0.5)'; };
+    b.ontouchend = () => { b.style.background = ''; };
+};
+// Игрок 1 (Снизу)
+act('p1-u', ()=>move(0,0,-1,-Math.PI/2)); act('p1-d', ()=>move(0,0,1,Math.PI/2));
+act('p1-l', ()=>move(0,-1,0,Math.PI)); act('p1-r', ()=>move(0,1,0,0));
+act('p1-fire', ()=>{ bullets.push({x:tanks[0].x, y:tanks[0].y, a:tanks[0].a}); });
+// Игрок 2 (Сверху - управление инвертировано для игрока напротив)
+act('p2-u', ()=>move(1,0,1,Math.PI/2)); act('p2-d', ()=>move(1,0,-1,-Math.PI/2));
+act('p2-l', ()=>move(1,1,0,0)); act('p2-r', ()=>move(1,-1,0,Math.PI));
+act('p2-fire', ()=>{ bullets.push({x:tanks[1].x, y:tanks[1].y, a:tanks[1].a}); });
 draw();
 </script>
 </body>
