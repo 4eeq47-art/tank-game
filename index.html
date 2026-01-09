@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Tanks Crossover Control</title>
+    <title>Tanks Fixed Controls</title>
     <style>
         body { margin: 0; background: #1a1a1a; overflow: hidden; touch-action: none; font-family: sans-serif; -webkit-user-select: none; }
         canvas { display: block; background: #000; }
@@ -17,19 +17,19 @@
         .stick { position: absolute; width: 45px; height: 45px; border-radius: 50%; top: 37px; left: 37px; pointer-events: none; opacity: 0.8; }
         .btn-fire { position: absolute; width: 100px; height: 100px; border-radius: 50%; z-index: 200; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; border: 4px solid #fff; touch-action: none; }
 
-        /* Цвета стиков под цвет танков */
-        #p1-stick { background: #0f0; box-shadow: 0 0 15px #0f0; } /* Зеленый стик */
-        #p2-stick { background: #f00; box-shadow: 0 0 15px #f00; } /* Красный стик */
+        /* Цвета стиков */
+        #p1-stick { background: #0f0; box-shadow: 0 0 15px #0f0; }
+        #p2-stick { background: #f00; box-shadow: 0 0 15px #f00; }
 
-        /* ПЕРЕКРЕСТНОЕ РАСПОЛОЖЕНИЕ */
+        /* ПРАВИЛЬНОЕ РАСПОЛОЖЕНИЕ */
         
-        /* Снизу (Зона Зеленого) */
-        #p1-fire { bottom: 40px; left: 30px; background: rgba(0,255,0,0.3); border-color: #0f0; } /* Огонь Зеленого */
-        #p2-joy { bottom: 40px; right: 30px; } /* Джойстик КРАСНОГО игрока */
+        /* Зона Зеленого (Снизу) */
+        #p1-joy { bottom: 40px; left: 30px; } 
+        #p1-fire { bottom: 40px; right: 30px; background: rgba(0,255,0,0.3); border-color: #0f0; }
 
-        /* Сверху (Зона Красного) */
-        #p2-fire { top: 40px; right: 30px; background: rgba(255,0,0,0.3); border-color: #f00; rotate: 180deg; } /* Огонь Красного */
-        #p1-joy { top: 40px; left: 30px; rotate: 180deg; } /* Джойстик ЗЕЛЕНОГО игрока */
+        /* Зона Красного (Сверху) */
+        #p2-joy { top: 40px; right: 30px; rotate: 180deg; } 
+        #p2-fire { top: 40px; left: 30px; background: rgba(255,0,0,0.3); border-color: #f00; rotate: 180deg; }
     </style>
 </head>
 <body>
