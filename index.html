@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Tanks: SOS Only</title>
+    <title>Tanks Tactical SOS</title>
     <style>
         body { margin: 0; background: #222; overflow: hidden; touch-action: none; font-family: sans-serif; -webkit-user-select: none; }
         canvas { display: block; background: #444; }
@@ -33,8 +33,8 @@
 const cvs = document.getElementById('g'), ctx = cvs.getContext('2d');
 let bullets = [], particles = [], sosTanks = [];
 let tanks = [
-    { x: 0, y: 0, c: '#2e7d32', a: -Math.PI/2, s: 0, hp: 3, maxHp: 3, dx:0, dy:0, id: 0, sosBuffer: [], lastDown: 0 },
-    { x: 0, y: 0, c: '#c62828', a: Math.PI/2, s: 0, hp: 3, maxHp: 3, dx:0, dy:0, id: 1, sosBuffer: [], lastDown: 0 }
+    { x: 0, y: 0, c: '#2e7d32', a: -Math.PI/2, s: 0, hp: 3, maxHp: 3, dx:0, dy:0, id: 0, sosBuffer: [], lastDown: 0, slow: 1 },
+    { x: 0, y: 0, c: '#c62828', a: Math.PI/2, s: 0, hp: 3, maxHp: 3, dx:0, dy:0, id: 1, sosBuffer: [], lastDown: 0, slow: 1 }
 ];
 
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -60,14 +60,13 @@ function drawDetailedTank(t, isSos = false) {
     ctx.fillStyle = '#111'; ctx.fillRect(-22, -18, 44, 8); ctx.fillRect(-22, 10, 44, 8);
     ctx.fillStyle = t.c; ctx.beginPath(); ctx.roundRect(-18, -12, 36, 24, 3); ctx.fill();
     ctx.beginPath(); ctx.arc(-2, 0, 10, 0, 7); ctx.fill(); ctx.stroke();
-    ctx.fillStyle = '#222'; ctx.fillRect(8, -3, 22, 6); ctx.fillRect(28, -5, 4, 10);
+    ctx.fillStyle = (t.slow < 1 && !isSos) ? 'rgba(0,200,255,0.5)' : '#222'; 
+    ctx.fillRect(8, -3, 22, 6); ctx.fillRect(28, -5, 4, 10);
     ctx.restore();
 
-    if(!isSos) {
-        ctx.fillStyle = '#000'; ctx.fillRect(t.x - 20, t.y - 35, 40, 6);
-        ctx.fillStyle = t.hp > 1 ? '#0f0' : '#f00';
-        ctx.fillRect(t.x - 20, t.y - 35, (t.hp / t.maxHp) * 40, 6);
-    }
+    ctx.fillStyle = '#000'; ctx.fillRect(t.x - 20, t.y - 35, 40, 6);
+    ctx.fillStyle = isSos ? '#aaa' : (t.hp > 1 ? '#0f0' : '#f00');
+    ctx.fillRect(t.x - 20, t.y - 35, (t.hp / (isSos?1:t.maxHp)) * 40, 6);
 }
 
 const getWalls = () => [
@@ -82,52 +81,90 @@ function update() {
 
     tanks.forEach((t, idx) => {
         if(t.dx || t.dy) {
-            let nx = t.x + t.dx*2.6, ny = t.y + t.dy*2.6;
+            let nx = t.x + t.dx * 2.6 * t.slow, ny = t.y + t.dy * 2.6 * t.slow;
             let hitW = getWalls().some(w => nx+18 > w.x && nx-18 < w.x+w.w && ny+18 > w.y && ny-18 < w.y+w.h);
             if(!hitW && nx>20 && nx<cvs.width-20 && ny>20 && ny<cvs.height-20) { t.x=nx; t.y=ny; }
             t.a = Math.atan2(t.dy, t.dx);
         }
+        if(t.slow < 1) t.slow += 0.002;
         drawDetailedTank(t);
     });
 
     sosTanks.forEach((st, i) => {
         const target = tanks[1-st.owner];
         const dist = Math.hypot(target.x - st.x, target.y - st.y);
-        if (dist > 60) {
+        
+        // Коллизии между SOS танками и противником
+        let canMove = dist > 45;
+        sosTanks.forEach((other, j) => {
+            if(i !== j && Math.hypot(st.x - other.x, st.y - other.y) < 40) canMove = false;
+        });
+
+        if (canMove) {
             st.a = Math.atan2(target.y - st.y, target.x - st.x);
-            st.x += Math.cos(st.a) * 2.2;
-            st.y += Math.sin(st.a) * 2.2;
+            st.x += Math.cos(st.a) * 1.8;
+            st.y += Math.sin(st.a) * 1.8;
         }
+
         drawDetailedTank(st, true);
-        if(Math.random()<0.02) bullets.push({x:st.x, y:st.y, a:st.a, owner:st.owner});
+        if(Math.random()<0.015) bullets.push({x:st.x, y:st.y, a:st.a, owner:st.owner, fromSos: true});
         st.life--;
         if(st.life <= 0) sosTanks.splice(i,1);
     });
 
     bullets.forEach((b, i) => {
         b.x += Math.cos(b.a)*8; b.y += Math.sin(b.a)*8;
-        ctx.fillStyle = 'yellow'; ctx.beginPath(); ctx.arc(b.x, b.y, 4, 0, 7); ctx.fill();
-        if(getWalls().some(w => b.x > w.x && b.x < w.x+w.w && b.y > w.y && b.y < w.y+w.h)) bullets.splice(i,1);
+        ctx.fillStyle = b.fromSos ? '#00f' : 'yellow'; 
+        ctx.beginPath(); ctx.arc(b.x, b.y, 4, 0, 7); ctx.fill();
+        
+        if(getWalls().some(w => b.x > w.x && b.x < w.x+w.w && b.y > w.y && b.y < w.y+w.h)) {
+            bullets.splice(i,1); return;
+        }
+
         tanks.forEach(t => {
             if(b.owner !== t.id && Math.hypot(b.x-t.x, b.y-t.y) < 25) {
-                bullets.splice(i,1); t.hp--; playSnd(60, 'sawtooth', 0.2);
+                bullets.splice(i,1); 
+                t.hp--; 
+                if(b.fromSos) t.slow = 0.3; // Замедление от подмоги
+                playSnd(b.fromSos ? 80 : 60, 'sawtooth', 0.2);
+                
                 if(t.hp <= 0) {
-                    tanks[b.owner].s++;
-                    document.getElementById('s1').innerText = tanks[0].s;
-                    document.getElementById('s2').innerText = tanks[1].s;
-                    t.hp=3; t.x=cvs.width/2; t.y=t.id===0?cvs.height-80:80;
+                    if(!b.fromSos) { // Очки только если убил игрок лично
+                        tanks[b.owner].s++;
+                        document.getElementById('s1').innerText = tanks[0].s;
+                        document.getElementById('s2').innerText = tanks[1].s;
+                    }
+                    // Эффект взрыва
+                    for(let k=0; k<20; k++) particles.push({x:t.x, y:t.y, vx:(Math.random()-0.5)*4, vy:(Math.random()-0.5)*4, a:1, r:4, c:'255,100,0'});
+                    t.hp=3; t.slow=1; t.x=cvs.width/2; t.y=t.id===0?cvs.height-80:80;
                 }
             }
         });
+        if(b.x<0 || b.x>cvs.width || b.y<0 || b.y>cvs.height) bullets.splice(i,1);
     });
+
+    particles.forEach((p, i) => {
+        p.x += p.vx; p.y += p.vy; p.a -= 0.02;
+        ctx.fillStyle = `rgba(${p.c},${p.a})`; ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, 7); ctx.fill();
+        if(p.a <= 0) particles.splice(i, 1);
+    });
+
     requestAnimationFrame(update);
 }
 
 function spawnSOS(idx) {
     const enemy = tanks[1-idx];
+    const sides = [
+        {x: -50, y: cvs.height/2}, {x: cvs.width+50, y: cvs.height/2},
+        {x: cvs.width/2, y: -50}, {x: cvs.width/2, y: cvs.height+50}
+    ];
     for(let i=0; i<8; i++) {
-        let a = Math.random()*Math.PI*2;
-        sosTanks.push({ x: enemy.x + Math.cos(a)*350, y: enemy.y + Math.sin(a)*350, a: a + Math.PI, c: tanks[idx].c, owner: idx, life: 500 });
+        let side = sides[i % 4];
+        sosTanks.push({ 
+            x: side.x + (Math.random()-0.5)*100, 
+            y: side.y + (Math.random()-0.5)*100, 
+            a: 0, c: tanks[idx].c, owner: idx, life: 600, hp: 1 
+        });
     }
 }
 
@@ -136,9 +173,7 @@ function handleBtn(idx, isDown) {
     if(isDown) {
         t.lastDown = now;
         const bx = t.x + Math.cos(t.a)*35, by = t.y + Math.sin(t.a)*35;
-        if(!getWalls().some(w => bx > w.x && bx < w.x+w.w && by > w.y && by < w.y+w.h)) {
-            bullets.push({x:bx, y:by, a:t.a, owner:idx}); playSnd(150, 'triangle', 0.1);
-        }
+        bullets.push({x:bx, y:by, a:t.a, owner:idx, fromSos: false}); playSnd(150, 'triangle', 0.1);
     } else {
         let dur = now - t.lastDown;
         let type = dur < 250 ? '.' : (dur > 400 ? '-' : null);
