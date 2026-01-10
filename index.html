@@ -3,16 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Tanks Tactical SOS</title>
+    <title>Tanks: Armored Bricks</title>
     <style>
         body { margin: 0; background: #222; overflow: hidden; touch-action: none; font-family: sans-serif; -webkit-user-select: none; }
-        canvas { display: block; background: #444; }
+        canvas { display: block; background: #333; }
         .score { position: absolute; width: 100%; text-align: center; font-size: 24px; font-weight: bold; z-index: 100; color: #fff; pointer-events: none; text-shadow: 2px 2px #000; }
         #s2 { top: 160px; transform: rotate(180deg); }
         #s1 { bottom: 160px; }
         .joy-zone, .btn-fire { position: fixed; border-radius: 50%; z-index: 200; touch-action: none; width: 150px; height: 150px; }
-        .joy-zone { background: rgba(255,255,255,0.1); border: 2px solid #666; }
-        .stick { position: absolute; width: 60px; height: 60px; border-radius: 50%; top: 45px; left: 45px; pointer-events: none; }
+        .joy-zone { background: rgba(255,255,255,0.05); border: 2px solid #555; }
+        .stick { position: absolute; width: 60px; height: 60px; border-radius: 50%; top: 45px; left: 45px; pointer-events: none; background: rgba(255,255,255,0.2); }
         .btn-fire { display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 20px; border: 4px solid #333; width: 130px; height: 130px; }
         #p1-fire span { transform: rotate(180deg); display: inline-block; }
     </style>
@@ -24,14 +24,14 @@
     <canvas id="g"></canvas>
     
     <div id="p1-fire" class="btn-fire" style="background: rgba(0,255,0,0.2); right: 20px; bottom: 20px;"><span>ОГОНЬ</span></div>
-    <div id="p1-joy" class="joy-zone" style="left: 20px; bottom: 20px;"><div id="p1-stick" class="stick" style="background: #0f0;"></div></div>
+    <div id="p1-joy" class="joy-zone" style="left: 20px; bottom: 20px;"><div id="p1-stick" class="stick" style="border: 2px solid #0f0;"></div></div>
     
     <div id="p2-fire" class="btn-fire" style="background: rgba(255,0,0,0.2); left: 20px; top: 20px; transform: rotate(180deg);"><span>ОГОНЬ</span></div>
-    <div id="p2-joy" class="joy-zone" style="right: 20px; top: 20px;"><div id="p2-stick" class="stick" style="background: #f00;"></div></div>
+    <div id="p2-joy" class="joy-zone" style="right: 20px; top: 20px;"><div id="p2-stick" class="stick" style="border: 2px solid #f00;"></div></div>
 
 <script>
 const cvs = document.getElementById('g'), ctx = cvs.getContext('2d');
-let bullets = [], particles = [], sosTanks = [];
+let bullets = [], particles = [], sosTanks = [], bricks = [];
 let tanks = [
     { x: 0, y: 0, c: '#2e7d32', a: -Math.PI/2, s: 0, hp: 3, maxHp: 3, dx:0, dy:0, id: 0, sosBuffer: [], lastDown: 0, slow: 1 },
     { x: 0, y: 0, c: '#c62828', a: Math.PI/2, s: 0, hp: 3, maxHp: 3, dx:0, dy:0, id: 1, sosBuffer: [], lastDown: 0, slow: 1 }
@@ -42,100 +42,108 @@ function playSnd(f, t, d) {
     try {
         const o = audioCtx.createOscillator(), g = audioCtx.createGain();
         o.type = t; o.frequency.setValueAtTime(f, audioCtx.currentTime);
-        g.gain.setValueAtTime(0.1, audioCtx.currentTime); g.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime+d);
+        g.gain.setValueAtTime(0.05, audioCtx.currentTime); g.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime+d);
         o.connect(g); g.connect(audioCtx.destination); o.start(); o.stop(audioCtx.currentTime+d);
     } catch(e){}
+}
+
+function createBricks() {
+    bricks = [];
+    const addRect = (xStart, yStart, wCount, hCount) => {
+        for(let i=0; i<wCount; i++) {
+            for(let j=0; j<hCount; j++) {
+                bricks.push({x: xStart + i*25, y: yStart + j*15, w: 25, h: 15});
+            }
+        }
+    };
+    // Нижнее П-укрытие (Зеленый)
+    addRect(cvs.width/2-75, cvs.height-180, 6, 1); // Перекладина
+    addRect(cvs.width/2-75, cvs.height-165, 1, 3); // Лево
+    addRect(cvs.width/2 + 50, cvs.height-165, 1, 3); // Право
+
+    // Верхнее П-укрытие (Красный)
+    addRect(cvs.width/2-75, 165, 6, 1); // Перекладина
+    addRect(cvs.width/2-75, 105, 1, 4); // Лево
+    addRect(cvs.width/2 + 50, 105, 1, 4); // Право
 }
 
 function resize() {
     cvs.width = window.innerWidth; cvs.height = window.innerHeight;
     tanks[0].x = cvs.width/2; tanks[0].y = cvs.height - 80;
     tanks[1].x = cvs.width/2; tanks[1].y = 80;
+    createBricks();
 }
 window.addEventListener('resize', resize);
 resize();
+
+function drawBrick(b) {
+    ctx.fillStyle = '#a52a2a'; // Кирпичный цвет
+    ctx.fillRect(b.x, b.y, b.w, b.h);
+    ctx.strokeStyle = '#5d1a1a';
+    ctx.strokeRect(b.x, b.y, b.w, b.h);
+    // Декор бронированного кирпича
+    ctx.fillStyle = 'rgba(0,0,0,0.2)';
+    ctx.fillRect(b.x+b.w-6, b.y+2, 4, b.h-4);
+}
 
 function drawDetailedTank(t, isSos = false) {
     ctx.save(); ctx.translate(t.x, t.y); ctx.rotate(t.a);
     ctx.fillStyle = '#111'; ctx.fillRect(-22, -18, 44, 8); ctx.fillRect(-22, 10, 44, 8);
     ctx.fillStyle = t.c; ctx.beginPath(); ctx.roundRect(-18, -12, 36, 24, 3); ctx.fill();
     ctx.beginPath(); ctx.arc(-2, 0, 10, 0, 7); ctx.fill(); ctx.stroke();
-    ctx.fillStyle = (t.slow < 1 && !isSos) ? 'rgba(0,200,255,0.5)' : '#222'; 
-    ctx.fillRect(8, -3, 22, 6); ctx.fillRect(28, -5, 4, 10);
-    ctx.restore();
-
-    ctx.fillStyle = '#000'; ctx.fillRect(t.x - 20, t.y - 35, 40, 6);
+    ctx.fillStyle = (t.slow < 1 && !isSos) ? '#00fbff' : '#222'; 
+    ctx.fillRect(8, -3, 22, 6); ctx.restore();
+    ctx.fillStyle = '#000'; ctx.fillRect(t.x-20, t.y-35, 40, 6);
     ctx.fillStyle = isSos ? '#aaa' : (t.hp > 1 ? '#0f0' : '#f00');
-    ctx.fillRect(t.x - 20, t.y - 35, (t.hp / (isSos?1:t.maxHp)) * 40, 6);
+    ctx.fillRect(t.x-20, t.y-35, (t.hp/(isSos?1:t.maxHp))*40, 6);
 }
-
-const getWalls = () => [
-    {x: cvs.width/2-75, y: cvs.height-180, w:150, h:15}, {x: cvs.width/2-75, y: cvs.height-180, w:15, h:60}, {x: cvs.width/2+60, y: cvs.height-180, w:15, h:60},
-    {x: cvs.width/2-75, y: 165, w:150, h:15}, {x: cvs.width/2-75, y: 105, w:15, h:60}, {x: cvs.width/2+60, y: 105, w:15, h:60}
-];
 
 function update() {
     ctx.clearRect(0,0,cvs.width,cvs.height);
-    ctx.fillStyle = '#5d4037';
-    getWalls().forEach(w => ctx.fillRect(w.x, w.y, w.w, w.h));
+    bricks.forEach(drawBrick);
 
-    tanks.forEach((t, idx) => {
+    tanks.forEach((t) => {
         if(t.dx || t.dy) {
-            let nx = t.x + t.dx * 2.6 * t.slow, ny = t.y + t.dy * 2.6 * t.slow;
-            let hitW = getWalls().some(w => nx+18 > w.x && nx-18 < w.x+w.w && ny+18 > w.y && ny-18 < w.y+w.h);
-            if(!hitW && nx>20 && nx<cvs.width-20 && ny>20 && ny<cvs.height-20) { t.x=nx; t.y=ny; }
+            let nx = t.x + t.dx * 2.8 * t.slow, ny = t.y + t.dy * 2.8 * t.slow;
+            let hitB = bricks.some(b => nx+20 > b.x && nx-20 < b.x+b.w && ny+20 > b.y && ny-18 < b.y+b.h);
+            if(!hitB && nx>20 && nx<cvs.width-20 && ny>20 && ny<cvs.height-20) { t.x=nx; t.y=ny; }
             t.a = Math.atan2(t.dy, t.dx);
         }
-        if(t.slow < 1) t.slow += 0.002;
+        if(t.slow < 1) t.slow += 0.003;
         drawDetailedTank(t);
     });
 
     sosTanks.forEach((st, i) => {
         const target = tanks[1-st.owner];
         const dist = Math.hypot(target.x - st.x, target.y - st.y);
-        
-        // Коллизии между SOS танками и противником
-        let canMove = dist > 45;
-        sosTanks.forEach((other, j) => {
-            if(i !== j && Math.hypot(st.x - other.x, st.y - other.y) < 40) canMove = false;
-        });
-
-        if (canMove) {
-            st.a = Math.atan2(target.y - st.y, target.x - st.x);
-            st.x += Math.cos(st.a) * 1.8;
-            st.y += Math.sin(st.a) * 1.8;
+        if (dist > 60) {
+            let nx = st.x + Math.cos(st.a) * 1.8, ny = st.y + Math.sin(st.a) * 1.8;
+            if(!bricks.some(b => nx+18 > b.x && nx-18 < b.x+b.w && ny+18 > b.y && ny-18 < b.y+b.h)) {
+                st.a = Math.atan2(target.y - st.y, target.x - st.x);
+                st.x = nx; st.y = ny;
+            }
         }
-
         drawDetailedTank(st, true);
         if(Math.random()<0.015) bullets.push({x:st.x, y:st.y, a:st.a, owner:st.owner, fromSos: true});
-        st.life--;
-        if(st.life <= 0) sosTanks.splice(i,1);
+        if(--st.life <= 0) sosTanks.splice(i,1);
     });
 
     bullets.forEach((b, i) => {
         b.x += Math.cos(b.a)*8; b.y += Math.sin(b.a)*8;
-        ctx.fillStyle = b.fromSos ? '#00f' : 'yellow'; 
+        ctx.fillStyle = b.fromSos ? '#00fbff' : 'yellow'; 
         ctx.beginPath(); ctx.arc(b.x, b.y, 4, 0, 7); ctx.fill();
         
-        if(getWalls().some(w => b.x > w.x && b.x < w.x+w.w && b.y > w.y && b.y < w.y+w.h)) {
-            bullets.splice(i,1); return;
+        // Попадание в непробиваемый кирпич
+        if(bricks.some(br => b.x > br.x && b.x < br.x+br.w && b.y > br.y && b.y < br.y+br.h)) {
+            bullets.splice(i, 1); playSnd(250, 'square', 0.05); return;
         }
 
         tanks.forEach(t => {
             if(b.owner !== t.id && Math.hypot(b.x-t.x, b.y-t.y) < 25) {
-                bullets.splice(i,1); 
-                t.hp--; 
-                if(b.fromSos) t.slow = 0.3; // Замедление от подмоги
-                playSnd(b.fromSos ? 80 : 60, 'sawtooth', 0.2);
-                
+                bullets.splice(i,1); t.hp--; if(b.fromSos) t.slow = 0.3; playSnd(160, 'sawtooth', 0.1);
                 if(t.hp <= 0) {
-                    if(!b.fromSos) { // Очки только если убил игрок лично
-                        tanks[b.owner].s++;
-                        document.getElementById('s1').innerText = tanks[0].s;
-                        document.getElementById('s2').innerText = tanks[1].s;
-                    }
-                    // Эффект взрыва
-                    for(let k=0; k<20; k++) particles.push({x:t.x, y:t.y, vx:(Math.random()-0.5)*4, vy:(Math.random()-0.5)*4, a:1, r:4, c:'255,100,0'});
+                    if(!b.fromSos) { tanks[b.owner].s++; document.getElementById('s1').innerText = tanks[0].s; document.getElementById('s2').innerText = tanks[1].s; }
+                    for(let k=0; k<15; k++) particles.push({x:t.x, y:t.y, vx:(Math.random()-0.5)*4, vy:(Math.random()-0.5)*4, a:1, r:3, c:'255,100,0'});
                     t.hp=3; t.slow=1; t.x=cvs.width/2; t.y=t.id===0?cvs.height-80:80;
                 }
             }
@@ -148,63 +156,51 @@ function update() {
         ctx.fillStyle = `rgba(${p.c},${p.a})`; ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, 7); ctx.fill();
         if(p.a <= 0) particles.splice(i, 1);
     });
-
     requestAnimationFrame(update);
 }
 
 function spawnSOS(idx) {
-    const enemy = tanks[1-idx];
-    const sides = [
-        {x: -50, y: cvs.height/2}, {x: cvs.width+50, y: cvs.height/2},
-        {x: cvs.width/2, y: -50}, {x: cvs.width/2, y: cvs.height+50}
-    ];
+    const sides = [{x:-60,y:cvs.height/2},{x:cvs.width+60,y:cvs.height/2},{x:cvs.width/2,y:-60},{x:cvs.width/2,y:cvs.height+60}];
     for(let i=0; i<8; i++) {
-        let side = sides[i % 4];
-        sosTanks.push({ 
-            x: side.x + (Math.random()-0.5)*100, 
-            y: side.y + (Math.random()-0.5)*100, 
-            a: 0, c: tanks[idx].c, owner: idx, life: 600, hp: 1 
-        });
+        let s = sides[i%4];
+        sosTanks.push({ x: s.x + (Math.random()-0.5)*50, y: s.y + (Math.random()-0.5)*50, a: 0, c: tanks[idx].c, owner: idx, life: 600 });
     }
 }
 
-function handleBtn(idx, isDown) {
+function handleSOS(idx, isDown) {
     const t = tanks[idx], now = Date.now();
-    if(isDown) {
-        t.lastDown = now;
-        const bx = t.x + Math.cos(t.a)*35, by = t.y + Math.sin(t.a)*35;
-        bullets.push({x:bx, y:by, a:t.a, owner:idx, fromSos: false}); playSnd(150, 'triangle', 0.1);
-    } else {
+    if(isDown) t.lastDown = now;
+    else {
         let dur = now - t.lastDown;
         let type = dur < 250 ? '.' : (dur > 400 ? '-' : null);
-        if(type) {
-            t.sosBuffer.push(type);
-            if(t.sosBuffer.length > 9) t.sosBuffer.shift();
-            if(t.sosBuffer.join('') === '...---...') { spawnSOS(idx); t.sosBuffer = []; }
-        }
+        if(type) { t.sosBuffer.push(type); if(t.sosBuffer.length > 9) t.sosBuffer.shift(); if(t.sosBuffer.join('') === '...---...') { spawnSOS(idx); t.sosBuffer = []; } }
     }
 }
 
-function setupJoy(joyId, idx) {
-    const joy = document.getElementById(joyId), stick = joy.querySelector('.stick');
-    joy.onpointerdown = (e) => { if (audioCtx.state === 'suspended') audioCtx.resume(); joy.setPointerCapture(e.pointerId); };
-    joy.onpointermove = (e) => {
+function initControl(joyId, fireId, idx) {
+    const joy = document.getElementById(joyId), fire = document.getElementById(fireId), stick = joy.querySelector('.stick');
+    joy.addEventListener('pointerdown', (e) => { if (audioCtx.state === 'suspended') audioCtx.resume(); joy.setPointerCapture(e.pointerId); });
+    joy.addEventListener('pointermove', (e) => {
         if(!joy.hasPointerCapture(e.pointerId)) return;
         const r = joy.getBoundingClientRect(), cx = r.width/2, cy = r.height/2;
         const xRaw = e.clientX - (r.left + cx), yRaw = e.clientY - (r.top + cy);
         const d = Math.min(cx-10, Math.hypot(xRaw,yRaw)), a = Math.atan2(yRaw,xRaw);
         stick.style.transform = `translate(${xRaw*(d/Math.hypot(xRaw,yRaw)||0)}px, ${yRaw*(d/Math.hypot(xRaw,yRaw)||0)}px)`;
         tanks[idx].dx = Math.cos(a)*(d/(cx-10)); tanks[idx].dy = Math.sin(a)*(d/(cx-10));
-    };
-    joy.onpointerup = () => { stick.style.transform = ''; tanks[idx].dx = 0; tanks[idx].dy = 0; };
+    });
+    joy.addEventListener('pointerup', () => { stick.style.transform = ''; tanks[idx].dx = 0; tanks[idx].dy = 0; });
+    fire.addEventListener('pointerdown', (e) => {
+        e.preventDefault(); if (audioCtx.state === 'suspended') audioCtx.resume();
+        handleSOS(idx, true);
+        const t = tanks[idx];
+        bullets.push({x: t.x + Math.cos(t.a)*35, y: t.y + Math.sin(t.a)*35, a: t.a, owner: idx, fromSos: false});
+        playSnd(120, 'triangle', 0.1);
+    });
+    fire.addEventListener('pointerup', (e) => { e.preventDefault(); handleSOS(idx, false); });
 }
 
-setupJoy('p1-joy', 0); setupJoy('p2-joy', 1);
-document.getElementById('p1-fire').onpointerdown = (e) => handleBtn(0, true);
-document.getElementById('p1-fire').onpointerup = (e) => handleBtn(0, false);
-document.getElementById('p2-fire').onpointerdown = (e) => handleBtn(1, true);
-document.getElementById('p2-fire').onpointerup = (e) => handleBtn(1, false);
-
+initControl('p1-joy', 'p1-fire', 0);
+initControl('p2-joy', 'p2-fire', 1);
 update();
 </script>
 </body>
