@@ -3,51 +3,49 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Retro Tanks Final Edition</title>
+    <title>Retro Tanks Pro</title>
     <style>
-        body { margin: 0; background: #ccc; overflow: hidden; touch-action: none; font-family: sans-serif; -webkit-user-select: none; }
-        canvas { display: block; background: #ddd; }
+        body { margin: 0; background: #333; overflow: hidden; touch-action: none; font-family: sans-serif; -webkit-user-select: none; }
+        canvas { display: block; background: #999; } /* Темнее фон */
         
-        /* Фиксация вертикального режима */
-        @media screen and (orientation: landscape) {
-            body::after {
-                content: "Пожалуйста, переверните устройство вертикально";
-                position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-                background: #111; color: white; display: flex; align-items: center;
-                justify-content: center; z-index: 9999;
-            }
-        }
-
-        #setup-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #111; z-index: 500; display: flex; flex-direction: column; justify-content: center; align-items: center; color: white; gap: 10px; }
-        .player-box { padding: 12px; border-radius: 15px; background: rgba(255,255,255,0.05); width: 85%; text-align: center; border: 2px solid #333; }
+        #setup-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 500; display: flex; flex-direction: column; justify-content: center; align-items: center; color: white; gap: 15px; }
+        .player-box { padding: 15px; border-radius: 15px; background: rgba(255,255,255,0.05); width: 85%; text-align: center; border: 2px solid #444; }
         .p2-box { border-color: #f00; transform: rotate(180deg); }
         .p1-box { border-color: #0f0; }
-        
-        .score { position: absolute; width: 100%; text-align: center; font-size: 24px; font-weight: bold; z-index: 100; color: #333; pointer-events: none; }
+        .btn-toggle { padding: 8px 15px; margin: 5px; background: #222; color: #fff; border: 1px solid #666; border-radius: 5px; cursor: pointer; }
+        .btn-toggle.active { background: #555; border-color: #fff; }
+
+        .score { position: absolute; width: 100%; text-align: center; font-size: 24px; font-weight: bold; z-index: 100; color: #222; pointer-events: none; }
         #s2 { top: 180px; transform: rotate(180deg); }
         #s1 { bottom: 180px; }
 
-        /* Контроллеры +50% размера */
         .joy-zone, .btn-fire { position: fixed; border-radius: 50%; z-index: 200; touch-action: none; visibility: hidden; }
-        .joy-zone { width: 150px; height: 150px; background: rgba(0,0,0,0.1); }
+        .joy-zone { width: 150px; height: 150px; background: rgba(0,0,0,0.2); }
         .stick { position: absolute; width: 60px; height: 60px; border-radius: 50%; top: 45px; left: 45px; pointer-events: none; }
-        .btn-fire { width: 135px; height: 135px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 20px; border: 3px solid rgba(0,0,0,0.1); }
+        .btn-fire { width: 135px; height: 135px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 20px; border: 3px solid rgba(0,0,0,0.2); }
         
-        /* Разворот слова ОГОНЬ для зеленого игрока */
-        #p1-fire span { transform: rotate(180deg); display: inline-block; }
+        #p1-fire span { transform: rotate(180deg); display: inline-block; } /* Разворот текста */
         
         #p1-stick { background: #0c0; }
         #p2-stick { background: #c00; }
-        #p1-fire { background: rgba(0,200,0,0.2); color: #060; }
-        #p2-fire { background: rgba(200,0,0,0.2); color: #600; transform: rotate(180deg); }
+        #p1-fire { background: rgba(0,200,0,0.3); color: #030; }
+        #p2-fire { background: rgba(200,0,0,0.3); color: #300; transform: rotate(180deg); }
     </style>
 </head>
 <body>
 
     <div id="setup-overlay">
-        <div class="player-box p2-box"><b>КРАСНЫЙ (ВЕРХ)</b><br>Управление зеркальное</div>
-        <button style="padding:15px 50px; border-radius:50px; font-weight:bold; font-size:22px; cursor:pointer;" onclick="startGame()">БОЙ!</button>
-        <div class="player-box p1-box"><b>ЗЕЛЕНЫЙ (НИЗ)</b><br>Управление прямое</div>
+        <div class="player-box p2-box">
+            <b>КРАСНЫЙ (ВЕРХ)</b><br>
+            Джойстик: <button class="btn-toggle active" onclick="cfg[1].j='L'; syncBtns(1)">СЛЕВА</button>
+            <button class="btn-toggle" onclick="cfg[1].j='R'; syncBtns(1)">СПРАВА</button>
+        </div>
+        <button style="padding:20px 60px; border-radius:50px; font-weight:bold; font-size:24px; background:#fff;" onclick="startGame()">ИГРАТЬ</button>
+        <div class="player-box p1-box">
+            <b>ЗЕЛЕНЫЙ (НИЗ)</b><br>
+            Джойстик: <button class="btn-toggle active" onclick="cfg[0].j='L'; syncBtns(0)">СЛЕВА</button>
+            <button class="btn-toggle" onclick="cfg[0].j='R'; syncBtns(0)">СПРАВА</button>
+        </div>
     </div>
 
     <div id="s2" class="score">0</div>
@@ -62,33 +60,56 @@
 <script>
 const cvs = document.getElementById('g'), ctx = cvs.getContext('2d');
 let gameStarted = false, bullets = [], explosions = [], surrenderAnims = [];
+let cfg = [{j:'L'}, {j:'L'}]; // Настройки сторон джойстиков
 let tanks = [
     { x: 0, y: 0, c: '#2e7d32', a: -Math.PI/2, s: 0, hp: 3, dx:0, dy:0, id: 0, dead: false, dc: 0 },
     { x: 0, y: 0, c: '#c62828', a: Math.PI/2, s: 0, hp: 3, dx:0, dy:0, id: 1, dead: false, dc: 0 }
 ];
 
-// Звук выстрела (Web Audio API)
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-function playShootSound() {
-    if (audioCtx.state === 'suspended') audioCtx.resume();
-    const osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
-    osc.type = 'square'; 
-    osc.frequency.setValueAtTime(150, audioCtx.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(40, audioCtx.currentTime + 0.1);
-    gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
-    osc.connect(gain); gain.connect(audioCtx.destination);
-    osc.start(); osc.stop(audioCtx.currentTime + 0.1);
+
+function playTone(freq, type, start, duration) {
+    const osc = audioCtx.createOscillator(), g = audioCtx.createGain();
+    osc.type = type; osc.frequency.setValueAtTime(freq, start);
+    g.gain.setValueAtTime(0.1, start); g.gain.exponentialRampToValueAtTime(0.001, start + duration);
+    osc.connect(g); g.connect(audioCtx.destination);
+    osc.start(start); osc.stop(start + duration);
+}
+
+function playIntro() {
+    const tempo = 0.15, now = audioCtx.currentTime;
+    const notes = [440, 440, 440, 349, 523, 440, 349, 523, 440]; // Упрощенный мотив
+    notes.forEach((f, i) => playTone(f, 'square', now + i*tempo, tempo));
+}
+
+function playShoot() {
+    playTone(150, 'triangle', audioCtx.currentTime, 0.1);
+}
+
+function playHit() {
+    const osc = audioCtx.createOscillator(), g = audioCtx.createGain();
+    osc.type = 'sawtooth'; osc.frequency.setValueAtTime(100, audioCtx.currentTime);
+    osc.frequency.linearRampToValueAtTime(10, audioCtx.currentTime + 0.2);
+    g.gain.setValueAtTime(0.2, audioCtx.currentTime);
+    osc.connect(g); g.connect(audioCtx.destination);
+    osc.start(); osc.stop(audioCtx.currentTime + 0.2);
+}
+
+function syncBtns(p) {
+    const box = document.querySelectorAll('.player-box')[p===1?0:2];
+    box.querySelectorAll('.btn-toggle').forEach((b, i) => b.classList.toggle('active', (i===0 && cfg[p].j==='L') || (i===1 && cfg[p].j==='R')));
 }
 
 function startGame() {
-    audioCtx.resume();
-    document.getElementById('p1-joy').style.left = '20px'; document.getElementById('p1-joy').style.bottom = '20px';
-    document.getElementById('p1-fire').style.right = '20px'; document.getElementById('p1-fire').style.bottom = '20px';
-    document.getElementById('p2-joy').style.right = '20px'; document.getElementById('p2-joy').style.top = '20px';
-    document.getElementById('p2-fire').style.left = '20px'; document.getElementById('p2-fire').style.top = '20px';
+    audioCtx.resume(); playIntro();
+    const p1j=document.getElementById('p1-joy'), p1f=document.getElementById('p1-fire');
+    const p2j=document.getElementById('p2-joy'), p2f=document.getElementById('p2-fire');
+    
+    p1j.style[cfg[0].j==='L'?'left':'right']='20px'; p1f.style[cfg[0].j==='L'?'right':'left']='20px';
+    p2j.style[cfg[1].j==='L'?'right':'left']='20px'; p2f.style[cfg[1].j==='L'?'left':'right']='20px';
+    
     document.getElementById('setup-overlay').style.display = 'none';
-    document.querySelectorAll('.joy-zone, .btn-fire').forEach(el => el.style.visibility = 'visible');
+    document.querySelectorAll('.joy-zone, .btn-fire').forEach(el => { el.style.visibility = 'visible'; el.style.bottom = el.id.includes('p1')?'20px':'auto'; el.style.top = el.id.includes('p2')?'20px':'auto'; });
     gameStarted = true; resize();
 }
 
@@ -103,31 +124,25 @@ function drawHuman(a) {
     let age = Date.now()-a.t, wave = Math.sin(age/120)*4;
     ctx.save(); ctx.translate(a.x,a.y); if(a.id===1) ctx.rotate(Math.PI);
     ctx.strokeStyle="white"; ctx.fillStyle="white"; ctx.lineWidth=2;
-    ctx.beginPath();ctx.moveTo(-4,8);ctx.lineTo(0,0);ctx.lineTo(4,8);ctx.stroke(); // Ноги
-    ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(0,-12);ctx.stroke(); // Туловище
-    ctx.beginPath();ctx.arc(0,-16,4,0,7);ctx.fill(); // Голова
-    ctx.beginPath();ctx.moveTo(-6,-8);ctx.lineTo(6,-8);ctx.stroke(); // Руки
-    ctx.beginPath();ctx.moveTo(6,-8);ctx.lineTo(12,-30+wave);ctx.stroke(); // Древко
-    ctx.fillRect(12,-30+wave,18,10); // Флаг
-    ctx.restore();
+    ctx.beginPath();ctx.moveTo(-4,8);ctx.lineTo(0,0);ctx.lineTo(4,8);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(0,-12);ctx.stroke();
+    ctx.beginPath();ctx.arc(0,-16,4,0,7);ctx.fill();
+    ctx.beginPath();ctx.moveTo(-6,-8);ctx.lineTo(6,-8);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(6,-8);ctx.lineTo(12,-30+wave);ctx.stroke();
+    ctx.fillRect(12,-30+wave,18,10); ctx.restore();
 }
 
 function drawTank(t) {
     ctx.save(); ctx.translate(t.x, t.y); ctx.rotate(t.a);
     let color = t.dead ? '#444' : t.c;
-    // Гусеницы
     ctx.fillStyle = '#222'; ctx.fillRect(-20, -18, 40, 8); ctx.fillRect(-20, 10, 40, 8);
-    // Корпус
     ctx.fillStyle = color; ctx.beginPath(); ctx.roundRect(-16, -12, 32, 24, 4); ctx.fill();
-    // Башня
     ctx.fillStyle = t.dead ? '#222' : color; ctx.beginPath(); ctx.arc(-2, 0, 9, 0, 7); ctx.fill();
-    ctx.strokeStyle = 'rgba(0,0,0,0.2)'; ctx.stroke();
-    // Дуло
     ctx.fillStyle = '#333'; ctx.fillRect(6, -3, 20, 6);
     ctx.restore();
     if(!t.dead) {
-        ctx.strokeStyle = '#888'; ctx.lineWidth = 1; ctx.fillStyle = '#fff';
-        ctx.beginPath(); ctx.roundRect(t.x-20, t.y+(t.id===0?35:-40), 40, 6, 3); ctx.fill(); ctx.stroke();
+        ctx.strokeStyle = '#555'; ctx.lineWidth = 1; ctx.fillStyle = '#fff';
+        ctx.beginPath(); ctx.roundRect(t.x-20, t.y+(t.id===0?35:-40), 40, 6, 3); ctx.fill();
         ctx.fillStyle = t.id===0?'#0a0':'#d00';
         ctx.beginPath(); ctx.roundRect(t.x-20, t.y+(t.id===0?35:-40), (t.hp/3)*40, 6, 3); ctx.fill();
     }
@@ -136,22 +151,13 @@ function drawTank(t) {
 function update() {
     if(!gameStarted) { requestAnimationFrame(update); return; }
     ctx.clearRect(0,0,cvs.width,cvs.height);
-    
     const walls = [
         {x:cvs.width/2-60, y:cvs.height-160, w:10, h:50}, {x:cvs.width/2+50, y:cvs.height-160, w:10, h:50}, {x:cvs.width/2-60, y:cvs.height-160, w:120, h:10},
         {x:cvs.width/2-60, y:110, w:10, h:50}, {x:cvs.width/2+50, y:110, w:10, h:50}, {x:cvs.width/2-60, y:150, w:120, h:10}
     ];
-    ctx.fillStyle = '#8d6e63'; walls.forEach(w => { ctx.fillRect(w.x, w.y, w.w, w.h); ctx.strokeRect(w.x, w.y, w.w, w.h); });
+    ctx.fillStyle = '#643'; walls.forEach(w => ctx.fillRect(w.x, w.y, w.w, w.h));
 
-    surrenderAnims = surrenderAnims.filter(a => {
-        drawHuman(a);
-        if(Date.now()-a.t > 3000) {
-            tanks[a.id].dead = false; tanks[a.id].hp = 3;
-            tanks[a.id].x = cvs.width/2; tanks[a.id].y = a.id===0?cvs.height-100:100;
-            return false;
-        }
-        return true;
-    });
+    surrenderAnims = surrenderAnims.filter(a => { drawHuman(a); return Date.now()-a.t < 3000; });
 
     tanks.forEach(t => {
         if (!t.dead && (Math.abs(t.dx) > 0.05 || Math.abs(t.dy) > 0.05)) {
@@ -159,7 +165,6 @@ function update() {
             if(!walls.some(w => nX+18 > w.x && nX-18 < w.x+w.w && nY+18 > w.y && nY-18 < w.y+w.h)) { t.x = nX; t.y = nY; }
             t.a = Math.atan2(t.dy, t.dx);
         }
-        t.x = Math.max(20, Math.min(cvs.width-20, t.x)); t.y = Math.max(20, Math.min(cvs.height-20, t.y));
         drawTank(t);
     });
 
@@ -170,11 +175,11 @@ function update() {
         if(walls.some(w => b.x > w.x && b.x < w.x+w.w && b.y > w.y && b.y < w.y+w.h)) hit = true;
         tanks.forEach(t => {
             if(!t.dead && b.owner !== t.id && Math.hypot(b.x-t.x, b.y-t.y) < 25) {
-                t.hp--; hit = true;
+                t.hp--; hit = true; playHit();
                 if(t.hp <= 0) {
                     t.dc++; tanks[b.owner].s++;
                     document.getElementById('s'+(b.owner+1)).innerText = tanks[b.owner].s;
-                    if(t.dc % 10 === 0) { t.dead = true; surrenderAnims.push({x:t.x, y:t.y, id:t.id, t:Date.now()}); }
+                    if(t.dc % 10 === 0) { t.dead = true; surrenderAnims.push({x:t.x, y:t.y, id:t.id, t:Date.now()}); setTimeout(() => {t.dead=false; t.hp=3;}, 3000); }
                     else { t.hp = 3; t.x = cvs.width/2; t.y = t.id===0?cvs.height-100:100; }
                 }
             }
@@ -190,7 +195,7 @@ function setupJoy(joyId, idx) {
     joy.onpointermove = (e) => {
         if(!joy.hasPointerCapture(e.pointerId)) return;
         const r = joy.getBoundingClientRect(), xRaw = e.clientX - (r.left + 75), yRaw = e.clientY - (r.top + 75);
-        // Инверсия для красного игрока (idx 1)
+        // Полная инверсия для Красного
         const x = (idx === 1) ? -xRaw : xRaw, y = (idx === 1) ? -yRaw : yRaw;
         const d = Math.min(50, Math.hypot(x,y)), a = Math.atan2(y,x);
         stick.style.transform = `translate(${xRaw*(d/Math.hypot(xRaw,yRaw)||0)}px, ${yRaw*(d/Math.hypot(xRaw,yRaw)||0)}px)`;
@@ -199,7 +204,7 @@ function setupJoy(joyId, idx) {
     joy.onpointerup = () => { stick.style.transform = ''; tanks[idx].dx = 0; tanks[idx].dy = 0; };
 }
 setupJoy('p1-joy', 0); setupJoy('p2-joy', 1);
-const shoot = (idx) => { if(!tanks[idx].dead) { bullets.push({x:tanks[idx].x+Math.cos(tanks[idx].a)*30, y:tanks[idx].y+Math.sin(tanks[idx].a)*30, a:tanks[idx].a, owner:idx}); playShootSound(); } };
+const shoot = (idx) => { if(!tanks[idx].dead) { bullets.push({x:tanks[idx].x+Math.cos(tanks[idx].a)*30, y:tanks[idx].y+Math.sin(tanks[idx].a)*30, a:tanks[idx].a, owner:idx}); playShoot(); } };
 document.getElementById('p1-fire').onpointerdown = (e) => { e.preventDefault(); shoot(0); };
 document.getElementById('p2-fire').onpointerdown = (e) => { e.preventDefault(); shoot(1); };
 resize(); update();
