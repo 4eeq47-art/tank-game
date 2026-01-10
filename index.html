@@ -3,20 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Tanks Joystick Test</title>
+    <title>Tanks: SOS Only</title>
     <style>
         body { margin: 0; background: #222; overflow: hidden; touch-action: none; font-family: sans-serif; -webkit-user-select: none; }
         canvas { display: block; background: #444; }
         .score { position: absolute; width: 100%; text-align: center; font-size: 24px; font-weight: bold; z-index: 100; color: #fff; pointer-events: none; text-shadow: 2px 2px #000; }
         #s2 { top: 160px; transform: rotate(180deg); }
         #s1 { bottom: 160px; }
-        
-        .joy-zone, .btn-fire { position: fixed; border-radius: 50%; z-index: 200; touch-action: none; }
-        .joy-zone { width: 100px; height: 100px; background: rgba(255,255,255,0.1); border: 1px solid #666; display: flex; align-items: center; justify-content: center; color: white; font-size: 12px; }
-        .stick { position: absolute; width: 40px; height: 40px; border-radius: 50%; pointer-events: none; background: #f00; }
-        
-        .btn-fire { width: 130px; height: 130px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 20px; border: 4px solid #333; }
-        #p1-fire span { transform: rotate(180deg); display: inline-block; } /* Переворот для зеленого */
+        .joy-zone, .btn-fire { position: fixed; border-radius: 50%; z-index: 200; touch-action: none; width: 150px; height: 150px; }
+        .joy-zone { background: rgba(255,255,255,0.1); border: 2px solid #666; }
+        .stick { position: absolute; width: 60px; height: 60px; border-radius: 50%; top: 45px; left: 45px; pointer-events: none; }
+        .btn-fire { display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 20px; border: 4px solid #333; width: 130px; height: 130px; }
+        #p1-fire span { transform: rotate(180deg); display: inline-block; }
     </style>
 </head>
 <body>
@@ -26,20 +24,17 @@
     <canvas id="g"></canvas>
     
     <div id="p1-fire" class="btn-fire" style="background: rgba(0,255,0,0.2); right: 20px; bottom: 20px;"><span>ОГОНЬ</span></div>
+    <div id="p1-joy" class="joy-zone" style="left: 20px; bottom: 20px;"><div id="p1-stick" class="stick" style="background: #0f0;"></div></div>
+    
     <div id="p2-fire" class="btn-fire" style="background: rgba(255,0,0,0.2); left: 20px; top: 20px; transform: rotate(180deg);"><span>ОГОНЬ</span></div>
-
-    <div id="p1-joy" class="joy-zone" style="left: 20px; bottom: 20px; width:150px; height:150px;"><div class="stick" style="background:#0f0; width:60px; height:60px; top:45px; left:45px;"></div></div>
-
-    <div id="joy-r1" class="joy-zone" style="right: 20px; top: 20px;">1<div class="stick"></div></div>
-    <div id="joy-r2" class="joy-zone" style="right: 130px; top: 20px;">2<div class="stick"></div></div>
-    <div id="joy-r3" class="joy-zone" style="right: 240px; top: 20px;">3<div class="stick"></div></div>
+    <div id="p2-joy" class="joy-zone" style="right: 20px; top: 20px;"><div id="p2-stick" class="stick" style="background: #f00;"></div></div>
 
 <script>
 const cvs = document.getElementById('g'), ctx = cvs.getContext('2d');
 let bullets = [], particles = [], sosTanks = [];
 let tanks = [
-    { x: 0, y: 0, c: '#2e7d32', a: -Math.PI/2, s: 0, hp: 3, dx:0, dy:0, id: 0, sosBuffer: [], lastDown: 0 },
-    { x: 0, y: 0, c: '#c62828', a: Math.PI/2, s: 0, hp: 3, dx:0, dy:0, id: 1, sosBuffer: [], lastDown: 0 }
+    { x: 0, y: 0, c: '#2e7d32', a: -Math.PI/2, s: 0, hp: 3, maxHp: 3, dx:0, dy:0, id: 0, sosBuffer: [], lastDown: 0 },
+    { x: 0, y: 0, c: '#c62828', a: Math.PI/2, s: 0, hp: 3, maxHp: 3, dx:0, dy:0, id: 1, sosBuffer: [], lastDown: 0 }
 ];
 
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -60,26 +55,24 @@ function resize() {
 window.addEventListener('resize', resize);
 resize();
 
-function drawDetailedTank(t) {
+function drawDetailedTank(t, isSos = false) {
     ctx.save(); ctx.translate(t.x, t.y); ctx.rotate(t.a);
     ctx.fillStyle = '#111'; ctx.fillRect(-22, -18, 44, 8); ctx.fillRect(-22, 10, 44, 8);
-    ctx.fillStyle = '#333'; // Катки
-    for(let i=-15; i<=15; i+=10) { ctx.beginPath(); ctx.arc(i,-14,2,0,7); ctx.fill(); ctx.beginPath(); ctx.arc(i,14,2,0,7); ctx.fill(); }
     ctx.fillStyle = t.c; ctx.beginPath(); ctx.roundRect(-18, -12, 36, 24, 3); ctx.fill();
     ctx.beginPath(); ctx.arc(-2, 0, 10, 0, 7); ctx.fill(); ctx.stroke();
     ctx.fillStyle = '#222'; ctx.fillRect(8, -3, 22, 6); ctx.fillRect(28, -5, 4, 10);
     ctx.restore();
+
+    if(!isSos) {
+        ctx.fillStyle = '#000'; ctx.fillRect(t.x - 20, t.y - 35, 40, 6);
+        ctx.fillStyle = t.hp > 1 ? '#0f0' : '#f00';
+        ctx.fillRect(t.x - 20, t.y - 35, (t.hp / t.maxHp) * 40, 6);
+    }
 }
 
 const getWalls = () => [
-    // П-образное укрытие Зеленого (низ)
-    {x: cvs.width/2-75, y: cvs.height-180, w:150, h:15},
-    {x: cvs.width/2-75, y: cvs.height-180, w:15, h:60},
-    {x: cvs.width/2+60, y: cvs.height-180, w:15, h:60},
-    // П-образное укрытие Красного (верх)
-    {x: cvs.width/2-75, y: 165, w:150, h:15},
-    {x: cvs.width/2-75, y: 105, w:15, h:60},
-    {x: cvs.width/2+60, y: 105, w:15, h:60}
+    {x: cvs.width/2-75, y: cvs.height-180, w:150, h:15}, {x: cvs.width/2-75, y: cvs.height-180, w:15, h:60}, {x: cvs.width/2+60, y: cvs.height-180, w:15, h:60},
+    {x: cvs.width/2-75, y: 165, w:150, h:15}, {x: cvs.width/2-75, y: 105, w:15, h:60}, {x: cvs.width/2+60, y: 105, w:15, h:60}
 ];
 
 function update() {
@@ -87,14 +80,8 @@ function update() {
     ctx.fillStyle = '#5d4037';
     getWalls().forEach(w => ctx.fillRect(w.x, w.y, w.w, w.h));
 
-    particles.forEach((p, i) => {
-        p.x += p.vx; p.y += p.vy; p.a -= 0.015; p.r += 0.2;
-        ctx.fillStyle = `rgba(${p.c},${p.a})`; ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, 7); ctx.fill();
-        if(p.a <= 0) particles.splice(i, 1);
-    });
-
     tanks.forEach((t, idx) => {
-        if((t.dx || t.dy) && !t.frozen) {
+        if(t.dx || t.dy) {
             let nx = t.x + t.dx*2.6, ny = t.y + t.dy*2.6;
             let hitW = getWalls().some(w => nx+18 > w.x && nx-18 < w.x+w.w && ny+18 > w.y && ny-18 < w.y+w.h);
             if(!hitW && nx>20 && nx<cvs.width-20 && ny>20 && ny<cvs.height-20) { t.x=nx; t.y=ny; }
@@ -104,9 +91,17 @@ function update() {
     });
 
     sosTanks.forEach((st, i) => {
-        st.x += Math.cos(st.a)*3; st.y += Math.sin(st.a)*3; drawDetailedTank(st);
-        if(Math.random()<0.04) bullets.push({x:st.x, y:st.y, a:st.a, owner:st.owner});
-        if(st.x<-60 || st.x>cvs.width+60 || st.y<-60 || st.y>cvs.height+60) sosTanks.splice(i,1);
+        const target = tanks[1-st.owner];
+        const dist = Math.hypot(target.x - st.x, target.y - st.y);
+        if (dist > 60) {
+            st.a = Math.atan2(target.y - st.y, target.x - st.x);
+            st.x += Math.cos(st.a) * 2.2;
+            st.y += Math.sin(st.a) * 2.2;
+        }
+        drawDetailedTank(st, true);
+        if(Math.random()<0.02) bullets.push({x:st.x, y:st.y, a:st.a, owner:st.owner});
+        st.life--;
+        if(st.life <= 0) sosTanks.splice(i,1);
     });
 
     bullets.forEach((b, i) => {
@@ -115,11 +110,9 @@ function update() {
         if(getWalls().some(w => b.x > w.x && b.x < w.x+w.w && b.y > w.y && b.y < w.y+w.h)) bullets.splice(i,1);
         tanks.forEach(t => {
             if(b.owner !== t.id && Math.hypot(b.x-t.x, b.y-t.y) < 25) {
-                bullets.splice(i,1); playSnd(60, 'sawtooth', 0.2);
-                for(let k=0; k<15; k++) particles.push({x:t.x, y:t.y, vx:Math.random()-0.5, vy:Math.random()-0.5, a:1, r:3, c:'100,100,100'});
-                t.hp--; 
-                if(t.hp <= 0 && !t.frozen) {
-                    tanks[b.owner].s++; 
+                bullets.splice(i,1); t.hp--; playSnd(60, 'sawtooth', 0.2);
+                if(t.hp <= 0) {
+                    tanks[b.owner].s++;
                     document.getElementById('s1').innerText = tanks[0].s;
                     document.getElementById('s2').innerText = tanks[1].s;
                     t.hp=3; t.x=cvs.width/2; t.y=t.id===0?cvs.height-80:80;
@@ -131,22 +124,22 @@ function update() {
 }
 
 function spawnSOS(idx) {
-    const enemy = tanks[1-idx]; enemy.frozen = true;
-    const timer = setInterval(() => {
-        for(let i=0; i<8; i++) particles.push({x:enemy.x+(Math.random()-0.5)*60, y:enemy.y+(Math.random()-0.5)*60, vx:0, vy:0, a:1, r:10, c:'255,100,0'});
-        playSnd(40, 'square', 0.1);
-    }, 100);
-    setTimeout(() => { clearInterval(timer); enemy.frozen = false; enemy.hp=0; }, 3000);
-    for(let i=0; i<10; i++) {
+    const enemy = tanks[1-idx];
+    for(let i=0; i<8; i++) {
         let a = Math.random()*Math.PI*2;
-        sosTanks.push({x:enemy.x+Math.cos(a)*400, y:enemy.y+Math.sin(a)*400, a:a+Math.PI, c:tanks[idx].c, owner:idx});
+        sosTanks.push({ x: enemy.x + Math.cos(a)*350, y: enemy.y + Math.sin(a)*350, a: a + Math.PI, c: tanks[idx].c, owner: idx, life: 500 });
     }
 }
 
-function handleSOSLogic(idx, isDown) {
+function handleBtn(idx, isDown) {
     const t = tanks[idx], now = Date.now();
-    if(isDown) t.lastDown = now;
-    else {
+    if(isDown) {
+        t.lastDown = now;
+        const bx = t.x + Math.cos(t.a)*35, by = t.y + Math.sin(t.a)*35;
+        if(!getWalls().some(w => bx > w.x && bx < w.x+w.w && by > w.y && by < w.y+w.h)) {
+            bullets.push({x:bx, y:by, a:t.a, owner:idx}); playSnd(150, 'triangle', 0.1);
+        }
+    } else {
         let dur = now - t.lastDown;
         let type = dur < 250 ? '.' : (dur > 400 ? '-' : null);
         if(type) {
@@ -157,47 +150,25 @@ function handleSOSLogic(idx, isDown) {
     }
 }
 
-function setupJoy(joyId, idx, mode) {
+function setupJoy(joyId, idx) {
     const joy = document.getElementById(joyId), stick = joy.querySelector('.stick');
     joy.onpointerdown = (e) => { if (audioCtx.state === 'suspended') audioCtx.resume(); joy.setPointerCapture(e.pointerId); };
     joy.onpointermove = (e) => {
         if(!joy.hasPointerCapture(e.pointerId)) return;
-        const r = joy.getBoundingClientRect(), centerX = r.width/2, centerY = r.height/2;
-        const xRaw = e.clientX - (r.left + centerX), yRaw = e.clientY - (r.top + centerY);
-        let x = xRaw, y = yRaw;
-        
-        if(idx === 1) { // Логика Красного
-            if(mode === 1) { y = -yRaw; } // Инверсия Y
-            if(mode === 2) { x = -xRaw; y = -yRaw; } // Полная инверсия
-        }
-
-        const d = Math.min(centerX-10, Math.hypot(x,y)), a = Math.atan2(y,x);
+        const r = joy.getBoundingClientRect(), cx = r.width/2, cy = r.height/2;
+        const xRaw = e.clientX - (r.left + cx), yRaw = e.clientY - (r.top + cy);
+        const d = Math.min(cx-10, Math.hypot(xRaw,yRaw)), a = Math.atan2(yRaw,xRaw);
         stick.style.transform = `translate(${xRaw*(d/Math.hypot(xRaw,yRaw)||0)}px, ${yRaw*(d/Math.hypot(xRaw,yRaw)||0)}px)`;
-        tanks[idx].dx = Math.cos(a)*(d/(centerX-10)); tanks[idx].dy = Math.sin(a)*(d/(centerX-10));
+        tanks[idx].dx = Math.cos(a)*(d/(cx-10)); tanks[idx].dy = Math.sin(a)*(d/(cx-10));
     };
     joy.onpointerup = () => { stick.style.transform = ''; tanks[idx].dx = 0; tanks[idx].dy = 0; };
 }
 
-setupJoy('p1-joy', 0, 0);
-setupJoy('joy-r1', 1, 1);
-setupJoy('joy-r2', 1, 2);
-setupJoy('joy-r3', 1, 3);
-
-const fire = (idx, isDown) => {
-    handleSOSLogic(idx, isDown);
-    if(isDown) {
-        const t = tanks[idx];
-        const bx = t.x + Math.cos(t.a)*35, by = t.y + Math.sin(t.a)*35;
-        if(!getWalls().some(w => bx > w.x && bx < w.x+w.w && by > w.y && by < w.y+w.h)) {
-            bullets.push({x:bx, y:by, a:t.a, owner:idx}); playSnd(150, 'triangle', 0.1);
-        }
-    }
-};
-
-document.getElementById('p1-fire').onpointerdown = (e) => fire(0, true);
-document.getElementById('p1-fire').onpointerup = (e) => fire(0, false);
-document.getElementById('p2-fire').onpointerdown = (e) => fire(1, true);
-document.getElementById('p2-fire').onpointerup = (e) => fire(1, false);
+setupJoy('p1-joy', 0); setupJoy('p2-joy', 1);
+document.getElementById('p1-fire').onpointerdown = (e) => handleBtn(0, true);
+document.getElementById('p1-fire').onpointerup = (e) => handleBtn(0, false);
+document.getElementById('p2-fire').onpointerdown = (e) => handleBtn(1, true);
+document.getElementById('p2-fire').onpointerup = (e) => handleBtn(1, false);
 
 update();
 </script>
