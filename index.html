@@ -5,203 +5,705 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Tanks: Armored Bricks</title>
     <style>
-        body { margin: 0; background: #222; overflow: hidden; touch-action: none; font-family: sans-serif; -webkit-user-select: none; }
-        canvas { display: block; background: #333; }
-        .score { position: absolute; width: 100%; text-align: center; font-size: 24px; font-weight: bold; z-index: 100; color: #fff; pointer-events: none; text-shadow: 2px 2px #000; }
-        #s2 { top: 160px; transform: rotate(180deg); }
-        #s1 { bottom: 160px; }
-        .joy-zone, .btn-fire { position: fixed; border-radius: 50%; z-index: 200; touch-action: none; width: 150px; height: 150px; }
-        .joy-zone { background: rgba(255,255,255,0.05); border: 2px solid #555; }
-        .stick { position: absolute; width: 60px; height: 60px; border-radius: 50%; top: 45px; left: 45px; pointer-events: none; background: rgba(255,255,255,0.2); }
-        .btn-fire { display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 20px; border: 4px solid #333; width: 130px; height: 130px; }
-        #p1-fire span { transform: rotate(180deg); display: inline-block; }
+        body { 
+            margin: 0; 
+            background: #222; 
+            overflow: hidden; 
+            touch-action: none; 
+            font-family: sans-serif; 
+            -webkit-user-select: none; 
+            user-select: none;
+        }
+        canvas { 
+            display: block; 
+            background: #333; 
+        }
+        .score { 
+            position: absolute; 
+            width: 100%; 
+            text-align: center; 
+            font-size: 24px; 
+            font-weight: bold; 
+            z-index: 100; 
+            color: #fff; 
+            pointer-events: none; 
+            text-shadow: 2px 2px #000; 
+        }
+        #score2 { 
+            top: 160px; 
+            transform: rotate(180deg); 
+        }
+        #score1 { 
+            bottom: 160px; 
+        }
+        .joy-zone, .btn-fire { 
+            position: fixed; 
+            border-radius: 50%; 
+            z-index: 200; 
+            touch-action: none; 
+            width: 150px; 
+            height: 150px; 
+        }
+        .joy-zone { 
+            background: rgba(255,255,255,0.05); 
+            border: 2px solid #555; 
+        }
+        .stick { 
+            position: absolute; 
+            width: 60px; 
+            height: 60px; 
+            border-radius: 50%; 
+            top: 45px; 
+            left: 45px; 
+            pointer-events: none; 
+            background: rgba(255,255,255,0.2); 
+            transition: transform 0.1s; 
+        }
+        .btn-fire { 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            font-weight: bold; 
+            font-size: 20px; 
+            border: 4px solid #333; 
+            width: 130px; 
+            height: 130px; 
+            transition: background-color 0.1s; 
+        }
+        .fire-text { 
+            transform: rotate(180deg); 
+            display: inline-block; 
+        }
     </style>
 </head>
 <body>
-
-    <div id="s2" class="score">0</div>
-    <div id="s1" class="score">0</div>
-    <canvas id="g"></canvas>
+    <div id="score2" class="score">0</div>
+    <div id="score1" class="score">0</div>
+    <canvas id="gameCanvas"></canvas>
     
-    <div id="p1-fire" class="btn-fire" style="background: rgba(0,255,0,0.2); right: 20px; bottom: 20px;"><span>ОГОНЬ</span></div>
-    <div id="p1-joy" class="joy-zone" style="left: 20px; bottom: 20px;"><div id="p1-stick" class="stick" style="border: 2px solid #0f0;"></div></div>
+    <!-- Игрок 1 (нижний, зеленый) -->
+    <div id="p1-fire" class="btn-fire" style="background: rgba(0,255,0,0.2); right: 20px; bottom: 20px;">
+        <span class="fire-text">ОГОНЬ</span>
+    </div>
+    <div id="p1-joy" class="joy-zone" style="left: 20px; bottom: 20px;">
+        <div id="p1-stick" class="stick" style="border: 2px solid #0f0;"></div>
+    </div>
     
-    <div id="p2-fire" class="btn-fire" style="background: rgba(255,0,0,0.2); left: 20px; top: 20px; transform: rotate(180deg);"><span>ОГОНЬ</span></div>
-    <div id="p2-joy" class="joy-zone" style="right: 20px; top: 20px;"><div id="p2-stick" class="stick" style="border: 2px solid #f00;"></div></div>
+    <!-- Игрок 2 (верхний, красный) -->
+    <div id="p2-fire" class="btn-fire" style="background: rgba(255,0,0,0.2); left: 20px; top: 20px; transform: rotate(180deg);">
+        <span class="fire-text">ОГОНЬ</span>
+    </div>
+    <div id="p2-joy" class="joy-zone" style="right: 20px; top: 20px;">
+        <div id="p2-stick" class="stick" style="border: 2px solid #f00;"></div>
+    </div>
 
 <script>
-const cvs = document.getElementById('g'), ctx = cvs.getContext('2d');
-let bullets = [], particles = [], sosTanks = [], bricks = [];
-let tanks = [
-    { x: 0, y: 0, c: '#2e7d32', a: -Math.PI/2, s: 0, hp: 3, maxHp: 3, dx:0, dy:0, id: 0, sosBuffer: [], lastDown: 0, slow: 1 },
-    { x: 0, y: 0, c: '#c62828', a: Math.PI/2, s: 0, hp: 3, maxHp: 3, dx:0, dy:0, id: 1, sosBuffer: [], lastDown: 0, slow: 1 }
+// ========== КОНФИГУРАЦИЯ ==========
+const CONFIG = {
+    TANK: {
+        SPEED: 2.8,
+        RADIUS: 20,
+        SLOW_RECOVERY: 0.003,
+        INITIAL_HP: 3
+    },
+    BULLET: {
+        SPEED: 8,
+        RADIUS: 4,
+        PLAYER_COLOR: 'yellow',
+        SOS_COLOR: '#00fbff'
+    },
+    BRICK: {
+        WIDTH: 25,
+        HEIGHT: 15,
+        COLOR: '#a52a2a',
+        BORDER_COLOR: '#5d1a1a'
+    },
+    SOS: {
+        SEQUENCE: '...---...',
+        MAX_BUFFER: 9,
+        DOT_MAX_TIME: 250,
+        DASH_MIN_TIME: 400,
+        TANK_COUNT: 8,
+        TANK_LIFE: 600,
+        TANK_SPEED: 1.8
+    },
+    PARTICLES: {
+        COUNT_ON_EXPLOSION: 15,
+        FADE_SPEED: 0.02
+    },
+    AUDIO: {
+        VOLUME: 0.05,
+        FADE_DURATION: 0.1
+    }
+};
+
+// ========== ИНИЦИАЛИЗАЦИЯ ==========
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+let bullets = [];
+let particles = [];
+let sosTanks = [];
+let bricks = [];
+
+// ========== КЛАСС ТАНКА ==========
+class Tank {
+    constructor(id, color, isBottomPlayer) {
+        this.id = id;
+        this.color = color;
+        this.isBottomPlayer = isBottomPlayer;
+        this.reset();
+    }
+    
+    reset() {
+        this.x = canvas.width / 2;
+        this.y = this.isBottomPlayer ? canvas.height - 80 : 80;
+        this.angle = this.isBottomPlayer ? -Math.PI/2 : Math.PI/2;
+        this.score = 0;
+        this.hp = CONFIG.TANK.INITIAL_HP;
+        this.maxHp = CONFIG.TANK.INITIAL_HP;
+        this.dx = 0;
+        this.dy = 0;
+        this.slow = 1;
+        this.sosBuffer = [];
+        this.lastDownTime = 0;
+    }
+    
+    get isAlive() {
+        return this.hp > 0;
+    }
+}
+
+const tanks = [
+    new Tank(0, '#2e7d32', true),   // Игрок 1 (нижний)
+    new Tank(1, '#c62828', false)   // Игрок 2 (верхний)
 ];
 
-const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-function playSnd(f, t, d) {
-    try {
-        const o = audioCtx.createOscillator(), g = audioCtx.createGain();
-        o.type = t; o.frequency.setValueAtTime(f, audioCtx.currentTime);
-        g.gain.setValueAtTime(0.05, audioCtx.currentTime); g.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime+d);
-        o.connect(g); g.connect(audioCtx.destination); o.start(); o.stop(audioCtx.currentTime+d);
-    } catch(e){}
-}
+// ========== АУДИО МЕНЕДЖЕР ==========
+const AudioManager = {
+    play(frequency, type, duration) {
+        if (audioCtx.state === 'suspended') return;
+        
+        try {
+            const oscillator = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            
+            oscillator.type = type;
+            oscillator.frequency.setValueAtTime(frequency, audioCtx.currentTime);
+            
+            gainNode.gain.setValueAtTime(CONFIG.AUDIO.VOLUME, audioCtx.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            
+            oscillator.start();
+            oscillator.stop(audioCtx.currentTime + duration);
+        } catch (error) {
+            console.warn('Audio error:', error);
+        }
+    },
+    
+    playBulletHit() {
+        this.play(250, 'square', 0.05);
+    },
+    
+    playTankHit() {
+        this.play(160, 'sawtooth', 0.1);
+    },
+    
+    playShoot() {
+        this.play(120, 'triangle', 0.1);
+    }
+};
 
+// ========== СОЗДАНИЕ УКРЫТИЙ ==========
 function createBricks() {
     bricks = [];
-    const addRect = (xStart, yStart, wCount, hCount) => {
-        for(let i=0; i<wCount; i++) {
-            for(let j=0; j<hCount; j++) {
-                bricks.push({x: xStart + i*25, y: yStart + j*15, w: 25, h: 15});
+    
+    function addBrickWall(xStart, yStart, widthInBricks, heightInBricks) {
+        for (let col = 0; col < widthInBricks; col++) {
+            for (let row = 0; row < heightInBricks; row++) {
+                bricks.push({
+                    x: xStart + col * CONFIG.BRICK.WIDTH,
+                    y: yStart + row * CONFIG.BRICK.HEIGHT,
+                    w: CONFIG.BRICK.WIDTH,
+                    h: CONFIG.BRICK.HEIGHT
+                });
             }
         }
-    };
-    // Нижнее П-укрытие (Зеленый)
-    addRect(cvs.width/2-75, cvs.height-180, 6, 1); // Перекладина
-    addRect(cvs.width/2-75, cvs.height-165, 1, 3); // Лево
-    addRect(cvs.width/2 + 50, cvs.height-165, 1, 3); // Право
-
-    // Верхнее П-укрытие (Красный)
-    addRect(cvs.width/2-75, 165, 6, 1); // Перекладина
-    addRect(cvs.width/2-75, 105, 1, 4); // Лево
-    addRect(cvs.width/2 + 50, 105, 1, 4); // Право
+    }
+    
+    const centerX = canvas.width / 2;
+    
+    // Нижнее укрытие (для игрока 1)
+    addBrickWall(centerX - 75, canvas.height - 180, 6, 1);  // Верхняя перекладина
+    addBrickWall(centerX - 75, canvas.height - 165, 1, 3);  // Левая стена
+    addBrickWall(centerX + 50, canvas.height - 165, 1, 3);  // Правая стена
+    
+    // Верхнее укрытие (для игрока 2)
+    addBrickWall(centerX - 75, 165, 6, 1);  // Нижняя перекладина
+    addBrickWall(centerX - 75, 105, 1, 4);  // Левая стена
+    addBrickWall(centerX + 50, 105, 1, 4);  // Правая стена
 }
 
-function resize() {
-    cvs.width = window.innerWidth; cvs.height = window.innerHeight;
-    tanks[0].x = cvs.width/2; tanks[0].y = cvs.height - 80;
-    tanks[1].x = cvs.width/2; tanks[1].y = 80;
-    createBricks();
-}
-window.addEventListener('resize', resize);
-resize();
-
-function drawBrick(b) {
-    ctx.fillStyle = '#a52a2a'; // Кирпичный цвет
-    ctx.fillRect(b.x, b.y, b.w, b.h);
-    ctx.strokeStyle = '#5d1a1a';
-    ctx.strokeRect(b.x, b.y, b.w, b.h);
-    // Декор бронированного кирпича
+// ========== ОТРИСОВКА ==========
+function drawBrick(brick) {
+    ctx.fillStyle = CONFIG.BRICK.COLOR;
+    ctx.fillRect(brick.x, brick.y, brick.w, brick.h);
+    
+    ctx.strokeStyle = CONFIG.BRICK.BORDER_COLOR;
+    ctx.strokeRect(brick.x, brick.y, brick.w, brick.h);
+    
+    // Эффект объема
     ctx.fillStyle = 'rgba(0,0,0,0.2)';
-    ctx.fillRect(b.x+b.w-6, b.y+2, 4, b.h-4);
+    ctx.fillRect(brick.x + brick.w - 6, brick.y + 2, 4, brick.h - 4);
 }
 
-function drawDetailedTank(t, isSos = false) {
-    ctx.save(); ctx.translate(t.x, t.y); ctx.rotate(t.a);
-    ctx.fillStyle = '#111'; ctx.fillRect(-22, -18, 44, 8); ctx.fillRect(-22, 10, 44, 8);
-    ctx.fillStyle = t.c; ctx.beginPath(); ctx.roundRect(-18, -12, 36, 24, 3); ctx.fill();
-    ctx.beginPath(); ctx.arc(-2, 0, 10, 0, 7); ctx.fill(); ctx.stroke();
-    ctx.fillStyle = (t.slow < 1 && !isSos) ? '#00fbff' : '#222'; 
-    ctx.fillRect(8, -3, 22, 6); ctx.restore();
-    ctx.fillStyle = '#000'; ctx.fillRect(t.x-20, t.y-35, 40, 6);
-    ctx.fillStyle = isSos ? '#aaa' : (t.hp > 1 ? '#0f0' : '#f00');
-    ctx.fillRect(t.x-20, t.y-35, (t.hp/(isSos?1:t.maxHp))*40, 6);
+function drawTank(tank, isSOSTank = false) {
+    ctx.save();
+    ctx.translate(tank.x, tank.y);
+    ctx.rotate(tank.angle);
+    
+    // Гусеницы
+    ctx.fillStyle = '#111';
+    ctx.fillRect(-22, -18, 44, 8);
+    ctx.fillRect(-22, 10, 44, 8);
+    
+    // Корпус
+    ctx.fillStyle = tank.color;
+    ctx.beginPath();
+    ctx.roundRect(-18, -12, 36, 24, 3);
+    ctx.fill();
+    
+    // Центральная точка
+    ctx.beginPath();
+    ctx.arc(-2, 0, 10, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    
+    // Дуло
+    ctx.fillStyle = (tank.slow < 1 && !isSOSTank) ? '#00fbff' : '#222';
+    ctx.fillRect(8, -3, 22, 6);
+    
+    ctx.restore();
+    
+    // Полоска здоровья
+    const healthBarWidth = 40;
+    const healthBarHeight = 6;
+    const healthBarX = tank.x - healthBarWidth / 2;
+    const healthBarY = tank.y - 35;
+    
+    // Фон полоски
+    ctx.fillStyle = '#000';
+    ctx.fillRect(healthBarX, healthBarY, healthBarWidth, healthBarHeight);
+    
+    // Заполнение здоровья
+    const healthRatio = tank.hp / (isSOSTank ? 1 : tank.maxHp);
+    ctx.fillStyle = isSOSTank ? '#aaa' : (tank.hp > 1 ? '#0f0' : '#f00');
+    ctx.fillRect(healthBarX, healthBarY, healthBarWidth * healthRatio, healthBarHeight);
 }
 
-function update() {
-    ctx.clearRect(0,0,cvs.width,cvs.height);
-    bricks.forEach(drawBrick);
-
-    tanks.forEach((t) => {
-        if(t.dx || t.dy) {
-            let nx = t.x + t.dx * 2.8 * t.slow, ny = t.y + t.dy * 2.8 * t.slow;
-            let hitB = bricks.some(b => nx+20 > b.x && nx-20 < b.x+b.w && ny+20 > b.y && ny-18 < b.y+b.h);
-            if(!hitB && nx>20 && nx<cvs.width-20 && ny>20 && ny<cvs.height-20) { t.x=nx; t.y=ny; }
-            t.a = Math.atan2(t.dy, t.dx);
+// ========== ОБНОВЛЕНИЕ ИГРЫ ==========
+function updateTanks() {
+    tanks.forEach(tank => {
+        if (tank.dx !== 0 || tank.dy !== 0) {
+            const newX = tank.x + tank.dx * CONFIG.TANK.SPEED * tank.slow;
+            const newY = tank.y + tank.dy * CONFIG.TANK.SPEED * tank.slow;
+            
+            // Проверка столкновений с кирпичами
+            const isColliding = bricks.some(brick => 
+                newX + CONFIG.TANK.RADIUS > brick.x &&
+                newX - CONFIG.TANK.RADIUS < brick.x + brick.w &&
+                newY + CONFIG.TANK.RADIUS > brick.y &&
+                newY - CONFIG.TANK.RADIUS < brick.y + brick.h
+            );
+            
+            // Проверка границ экрана
+            const isInBounds = 
+                newX > CONFIG.TANK.RADIUS &&
+                newX < canvas.width - CONFIG.TANK.RADIUS &&
+                newY > CONFIG.TANK.RADIUS &&
+                newY < canvas.height - CONFIG.TANK.RADIUS;
+            
+            if (!isColliding && isInBounds) {
+                tank.x = newX;
+                tank.y = newY;
+            }
+            
+            tank.angle = Math.atan2(tank.dy, tank.dx);
         }
-        if(t.slow < 1) t.slow += 0.003;
-        drawDetailedTank(t);
+        
+        // Восстановление скорости после замедления
+        if (tank.slow < 1) {
+            tank.slow += CONFIG.TANK.SLOW_RECOVERY;
+        }
+        
+        if (tank.isAlive) {
+            drawTank(tank);
+        }
     });
+}
 
-    sosTanks.forEach((st, i) => {
-        const target = tanks[1-st.owner];
-        const dist = Math.hypot(target.x - st.x, target.y - st.y);
-        if (dist > 60) {
-            let nx = st.x + Math.cos(st.a) * 1.8, ny = st.y + Math.sin(st.a) * 1.8;
-            if(!bricks.some(b => nx+18 > b.x && nx-18 < b.x+b.w && ny+18 > b.y && ny-18 < b.y+b.h)) {
-                st.a = Math.atan2(target.y - st.y, target.x - st.x);
-                st.x = nx; st.y = ny;
+function updateSOSTanks() {
+    for (let i = sosTanks.length - 1; i >= 0; i--) {
+        const sosTank = sosTanks[i];
+        const target = tanks[1 - sosTank.owner];
+        
+        // Движение к цели
+        const distance = Math.hypot(target.x - sosTank.x, target.y - sosTank.y);
+        
+        if (distance > 60) {
+            const newX = sosTank.x + Math.cos(sosTank.angle) * CONFIG.SOS.TANK_SPEED;
+            const newY = sosTank.y + Math.sin(sosTank.angle) * CONFIG.SOS.TANK_SPEED;
+            
+            // Проверка столкновений
+            const isColliding = bricks.some(brick => 
+                newX + 18 > brick.x &&
+                newX - 18 < brick.x + brick.w &&
+                newY + 18 > brick.y &&
+                newY - 18 < brick.y + brick.h
+            );
+            
+            if (!isColliding) {
+                sosTank.angle = Math.atan2(target.y - sosTank.y, target.x - sosTank.x);
+                sosTank.x = newX;
+                sosTank.y = newY;
             }
         }
-        drawDetailedTank(st, true);
-        if(Math.random()<0.015) bullets.push({x:st.x, y:st.y, a:st.a, owner:st.owner, fromSos: true});
-        if(--st.life <= 0) sosTanks.splice(i,1);
-    });
-
-    bullets.forEach((b, i) => {
-        b.x += Math.cos(b.a)*8; b.y += Math.sin(b.a)*8;
-        ctx.fillStyle = b.fromSos ? '#00fbff' : 'yellow'; 
-        ctx.beginPath(); ctx.arc(b.x, b.y, 4, 0, 7); ctx.fill();
         
-        // Попадание в непробиваемый кирпич
-        if(bricks.some(br => b.x > br.x && b.x < br.x+br.w && b.y > br.y && b.y < br.y+br.h)) {
-            bullets.splice(i, 1); playSnd(250, 'square', 0.05); return;
+        drawTank(sosTank, true);
+        
+        // Случайная стрельба
+        if (Math.random() < 0.015) {
+            bullets.push({
+                x: sosTank.x,
+                y: sosTank.y,
+                angle: sosTank.angle,
+                owner: sosTank.owner,
+                isFromSOS: true
+            });
         }
+        
+        // Уменьшение времени жизни
+        sosTank.life--;
+        if (sosTank.life <= 0) {
+            sosTanks.splice(i, 1);
+        }
+    }
+}
 
-        tanks.forEach(t => {
-            if(b.owner !== t.id && Math.hypot(b.x-t.x, b.y-t.y) < 25) {
-                bullets.splice(i,1); t.hp--; if(b.fromSos) t.slow = 0.3; playSnd(160, 'sawtooth', 0.1);
-                if(t.hp <= 0) {
-                    if(!b.fromSos) { tanks[b.owner].s++; document.getElementById('s1').innerText = tanks[0].s; document.getElementById('s2').innerText = tanks[1].s; }
-                    for(let k=0; k<15; k++) particles.push({x:t.x, y:t.y, vx:(Math.random()-0.5)*4, vy:(Math.random()-0.5)*4, a:1, r:3, c:'255,100,0'});
-                    t.hp=3; t.slow=1; t.x=cvs.width/2; t.y=t.id===0?cvs.height-80:80;
+function updateBullets() {
+    for (let i = bullets.length - 1; i >= 0; i--) {
+        const bullet = bullets[i];
+        
+        // Движение пули
+        bullet.x += Math.cos(bullet.angle) * CONFIG.BULLET.SPEED;
+        bullet.y += Math.sin(bullet.angle) * CONFIG.BULLET.SPEED;
+        
+        // Отрисовка пули
+        ctx.fillStyle = bullet.isFromSOS ? CONFIG.BULLET.SOS_COLOR : CONFIG.BULLET.PLAYER_COLOR;
+        ctx.beginPath();
+        ctx.arc(bullet.x, bullet.y, CONFIG.BULLET.RADIUS, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Столкновение с кирпичами
+        const hitBrick = bricks.some(brick => 
+            bullet.x > brick.x &&
+            bullet.x < brick.x + brick.w &&
+            bullet.y > brick.y &&
+            bullet.y < brick.y + brick.h
+        );
+        
+        if (hitBrick) {
+            bullets.splice(i, 1);
+            AudioManager.playBulletHit();
+            continue;
+        }
+        
+        // Столкновение с танками
+        let hitTank = false;
+        
+        for (const tank of tanks) {
+            if (bullet.owner === tank.id || !tank.isAlive) continue;
+            
+            const distance = Math.hypot(bullet.x - tank.x, bullet.y - tank.y);
+            
+            if (distance < 25) {
+                hitTank = true;
+                tank.hp--;
+                
+                if (bullet.isFromSOS) {
+                    tank.slow = 0.3;
                 }
+                
+                AudioManager.playTankHit();
+                
+                // Смерть танка
+                if (tank.hp <= 0) {
+                    // Начисление очков
+                    if (!bullet.isFromSOS) {
+                        tanks[bullet.owner].score++;
+                        updateScoreDisplay();
+                    }
+                    
+                    // Эффект взрыва
+                    createExplosion(tank.x, tank.y);
+                    
+                    // Респаун танка
+                    tank.hp = tank.maxHp;
+                    tank.slow = 1;
+                    tank.x = canvas.width / 2;
+                    tank.y = tank.isBottomPlayer ? canvas.height - 80 : 80;
+                }
+                
+                break;
+            }
+        }
+        
+        if (hitTank) {
+            bullets.splice(i, 1);
+            continue;
+        }
+        
+        // Выход за границы
+        if (bullet.x < 0 || bullet.x > canvas.width || bullet.y < 0 || bullet.y > canvas.height) {
+            bullets.splice(i, 1);
+        }
+    }
+}
+
+function updateParticles() {
+    for (let i = particles.length - 1; i >= 0; i--) {
+        const particle = particles[i];
+        
+        particle.x += particle.vx;
+        particle.y += particle.vy;
+        particle.alpha -= CONFIG.PARTICLES.FADE_SPEED;
+        
+        ctx.fillStyle = `rgba(${particle.color}, ${particle.alpha})`;
+        ctx.beginPath();
+        ctx.arc(particle.x, particle.y, particle.radius, 0, Math.PI * 2);
+        ctx.fill();
+        
+        if (particle.alpha <= 0) {
+            particles.splice(i, 1);
+        }
+    }
+}
+
+function createExplosion(x, y) {
+    for (let i = 0; i < CONFIG.PARTICLES.COUNT_ON_EXPLOSION; i++) {
+        particles.push({
+            x: x,
+            y: y,
+            vx: (Math.random() - 0.5) * 4,
+            vy: (Math.random() - 0.5) * 4,
+            alpha: 1,
+            radius: 3,
+            color: '255,100,0'
+        });
+    }
+}
+
+function updateScoreDisplay() {
+    document.getElementById('score1').textContent = tanks[0].score;
+    document.getElementById('score2').textContent = tanks[1].score;
+}
+
+// ========== УПРАВЛЕНИЕ ИГРОКА ==========
+class PlayerController {
+    constructor(joyElementId, fireElementId, stickElementId, playerIndex) {
+        this.joyElement = document.getElementById(joyElementId);
+        this.fireElement = document.getElementById(fireElementId);
+        this.stickElement = document.getElementById(stickElementId);
+        this.playerIndex = playerIndex;
+        this.isFirePressed = false;
+        
+        this.init();
+    }
+    
+    init() {
+        this.initJoypad();
+        this.initFireButton();
+    }
+    
+    initJoypad() {
+        this.joyElement.addEventListener('pointerdown', (event) => {
+            this.resumeAudio();
+            this.joyElement.setPointerCapture(event.pointerId);
+        });
+        
+        this.joyElement.addEventListener('pointermove', (event) => {
+            if (!this.joyElement.hasPointerCapture(event.pointerId)) return;
+            
+            const rect = this.joyElement.getBoundingClientRect();
+            const centerX = rect.width / 2;
+            const centerY = rect.height / 2;
+            
+            const rawX = event.clientX - (rect.left + centerX);
+            const rawY = event.clientY - (rect.top + centerY);
+            
+            const maxDistance = centerX - 10;
+            const distance = Math.min(maxDistance, Math.hypot(rawX, rawY));
+            const angle = Math.atan2(rawY, rawX);
+            
+            // Позиция стика
+            const scale = distance / (Math.hypot(rawX, rawY) || 1);
+            this.stickElement.style.transform = `translate(${rawX * scale}px, ${rawY * scale}px)`;
+            
+            // Направление танка
+            const tank = tanks[this.playerIndex];
+            tank.dx = Math.cos(angle) * (distance / maxDistance);
+            tank.dy = Math.sin(angle) * (distance / maxDistance);
+        });
+        
+        this.joyElement.addEventListener('pointerup', () => {
+            this.stickElement.style.transform = '';
+            
+            const tank = tanks[this.playerIndex];
+            tank.dx = 0;
+            tank.dy = 0;
+        });
+    }
+    
+    initFireButton() {
+        this.fireElement.addEventListener('pointerdown', (event) => {
+            event.preventDefault();
+            this.resumeAudio();
+            
+            this.isFirePressed = true;
+            this.fireElement.style.backgroundColor = 'rgba(255,255,255,0.3)';
+            
+            // Начало SOS-последовательности
+            this.handleSOS(true);
+            
+            // Выстрел
+            const tank = tanks[this.playerIndex];
+            if (tank.isAlive) {
+                bullets.push({
+                    x: tank.x + Math.cos(tank.angle) * 35,
+                    y: tank.y + Math.sin(tank.angle) * 35,
+                    angle: tank.angle,
+                    owner: tank.id,
+                    isFromSOS: false
+                });
+                AudioManager.playShoot();
             }
         });
-        if(b.x<0 || b.x>cvs.width || b.y<0 || b.y>cvs.height) bullets.splice(i,1);
-    });
-
-    particles.forEach((p, i) => {
-        p.x += p.vx; p.y += p.vy; p.a -= 0.02;
-        ctx.fillStyle = `rgba(${p.c},${p.a})`; ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, 7); ctx.fill();
-        if(p.a <= 0) particles.splice(i, 1);
-    });
-    requestAnimationFrame(update);
-}
-
-function spawnSOS(idx) {
-    const sides = [{x:-60,y:cvs.height/2},{x:cvs.width+60,y:cvs.height/2},{x:cvs.width/2,y:-60},{x:cvs.width/2,y:cvs.height+60}];
-    for(let i=0; i<8; i++) {
-        let s = sides[i%4];
-        sosTanks.push({ x: s.x + (Math.random()-0.5)*50, y: s.y + (Math.random()-0.5)*50, a: 0, c: tanks[idx].c, owner: idx, life: 600 });
+        
+        this.fireElement.addEventListener('pointerup', (event) => {
+            event.preventDefault();
+            this.isFirePressed = false;
+            this.fireElement.style.backgroundColor = '';
+            
+            // Конец SOS-последовательности
+            this.handleSOS(false);
+        });
+    }
+    
+    handleSOS(isStart) {
+        const tank = tanks[this.playerIndex];
+        const now = Date.now();
+        
+        if (isStart) {
+            tank.lastDownTime = now;
+        } else {
+            const duration = now - tank.lastDownTime;
+            let signalType = null;
+            
+            if (duration < CONFIG.SOS.DOT_MAX_TIME) {
+                signalType = '.';
+            } else if (duration > CONFIG.SOS.DASH_MIN_TIME) {
+                signalType = '-';
+            }
+            
+            if (signalType) {
+                tank.sosBuffer.push(signalType);
+                
+                if (tank.sosBuffer.length > CONFIG.SOS.MAX_BUFFER) {
+                    tank.sosBuffer.shift();
+                }
+                
+                if (tank.sosBuffer.join('') === CONFIG.SOS.SEQUENCE) {
+                    this.spawnSOS(tank.id);
+                    tank.sosBuffer = [];
+                }
+            }
+        }
+    }
+    
+    spawnSOS(playerId) {
+        const spawnPoints = [
+            { x: -60, y: canvas.height / 2 },
+            { x: canvas.width + 60, y: canvas.height / 2 },
+            { x: canvas.width / 2, y: -60 },
+            { x: canvas.width / 2, y: canvas.height + 60 }
+        ];
+        
+        for (let i = 0; i < CONFIG.SOS.TANK_COUNT; i++) {
+            const point = spawnPoints[i % 4];
+            
+            sosTanks.push({
+                x: point.x + (Math.random() - 0.5) * 50,
+                y: point.y + (Math.random() - 0.5) * 50,
+                angle: 0,
+                color: tanks[playerId].color,
+                owner: playerId,
+                life: CONFIG.SOS.TANK_LIFE
+            });
+        }
+    }
+    
+    resumeAudio() {
+        if (audioCtx.state === 'suspended') {
+            audioCtx.resume();
+        }
     }
 }
 
-function handleSOS(idx, isDown) {
-    const t = tanks[idx], now = Date.now();
-    if(isDown) t.lastDown = now;
-    else {
-        let dur = now - t.lastDown;
-        let type = dur < 250 ? '.' : (dur > 400 ? '-' : null);
-        if(type) { t.sosBuffer.push(type); if(t.sosBuffer.length > 9) t.sosBuffer.shift(); if(t.sosBuffer.join('') === '...---...') { spawnSOS(idx); t.sosBuffer = []; } }
-    }
+// ========== ИНИЦИАЛИЗАЦИЯ ИГРЫ ==========
+function resizeCanvas() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    
+    // Перемещение танков в стартовые позиции
+    tanks.forEach(tank => {
+        tank.x = canvas.width / 2;
+        tank.y = tank.isBottomPlayer ? canvas.height - 80 : 80;
+    });
+    
+    // Пересоздание укрытий
+    createBricks();
 }
 
-function initControl(joyId, fireId, idx) {
-    const joy = document.getElementById(joyId), fire = document.getElementById(fireId), stick = joy.querySelector('.stick');
-    joy.addEventListener('pointerdown', (e) => { if (audioCtx.state === 'suspended') audioCtx.resume(); joy.setPointerCapture(e.pointerId); });
-    joy.addEventListener('pointermove', (e) => {
-        if(!joy.hasPointerCapture(e.pointerId)) return;
-        const r = joy.getBoundingClientRect(), cx = r.width/2, cy = r.height/2;
-        const xRaw = e.clientX - (r.left + cx), yRaw = e.clientY - (r.top + cy);
-        const d = Math.min(cx-10, Math.hypot(xRaw,yRaw)), a = Math.atan2(yRaw,xRaw);
-        stick.style.transform = `translate(${xRaw*(d/Math.hypot(xRaw,yRaw)||0)}px, ${yRaw*(d/Math.hypot(xRaw,yRaw)||0)}px)`;
-        tanks[idx].dx = Math.cos(a)*(d/(cx-10)); tanks[idx].dy = Math.sin(a)*(d/(cx-10));
-    });
-    joy.addEventListener('pointerup', () => { stick.style.transform = ''; tanks[idx].dx = 0; tanks[idx].dy = 0; });
-    fire.addEventListener('pointerdown', (e) => {
-        e.preventDefault(); if (audioCtx.state === 'suspended') audioCtx.resume();
-        handleSOS(idx, true);
-        const t = tanks[idx];
-        bullets.push({x: t.x + Math.cos(t.a)*35, y: t.y + Math.sin(t.a)*35, a: t.a, owner: idx, fromSos: false});
-        playSnd(120, 'triangle', 0.1);
-    });
-    fire.addEventListener('pointerup', (e) => { e.preventDefault(); handleSOS(idx, false); });
+// Инициализация контроллеров
+const controllers = [
+    new PlayerController('p1-joy', 'p1-fire', 'p1-stick', 0),
+    new PlayerController('p2-joy', 'p2-fire', 'p2-stick', 1)
+];
+
+// Основной игровой цикл
+function gameLoop() {
+    // Очистка экрана
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    // Отрисовка всех объектов
+    bricks.forEach(drawBrick);
+    updateTanks();
+    updateSOSTanks();
+    updateBullets();
+    updateParticles();
+    
+    // Следующий кадр
+    requestAnimationFrame(gameLoop);
 }
 
-initControl('p1-joy', 'p1-fire', 0);
-initControl('p2-joy', 'p2-fire', 1);
-update();
+// Запуск игры
+window.addEventListener('resize', resizeCanvas);
+resizeCanvas();
+gameLoop();
 </script>
 </body>
 </html>
