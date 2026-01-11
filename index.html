@@ -7,17 +7,132 @@
     <style>
         body { 
             margin: 0; 
+            padding: 0;
             background: #222; 
             overflow: hidden; 
             touch-action: none; 
-            font-family: sans-serif; 
+            font-family: 'Arial', sans-serif; 
             -webkit-user-select: none; 
             user-select: none;
+            -webkit-text-size-adjust: none;
+            text-size-adjust: none;
+        }
+        html, body {
+            width: 100%;
+            height: 100%;
+            position: fixed;
         }
         canvas { 
             display: block; 
-            background: #333; 
+            background: #333;
+            width: 100%;
+            height: 100%;
         }
+        
+        /* Меню */
+        #menu {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            transition: opacity 0.3s;
+        }
+        
+        .menu-title {
+            font-size: 48px;
+            margin-bottom: 40px;
+            color: #ffcc00;
+            text-shadow: 0 0 10px rgba(255, 204, 0, 0.5);
+        }
+        
+        .mode-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            width: 300px;
+        }
+        
+        .mode-btn {
+            padding: 20px;
+            font-size: 24px;
+            border: none;
+            border-radius: 10px;
+            background: #444;
+            color: white;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+        }
+        
+        .mode-btn:hover {
+            background: #555;
+            transform: scale(1.05);
+        }
+        
+        .mode-btn.active {
+            background: #2e7d32;
+            box-shadow: 0 0 15px rgba(46, 125, 50, 0.5);
+        }
+        
+        .difficulty-buttons {
+            display: flex;
+            gap: 10px;
+            margin: 20px 0;
+        }
+        
+        .diff-btn {
+            padding: 10px 20px;
+            background: #333;
+            color: white;
+            border: 2px solid #555;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        
+        .diff-btn.active {
+            border-color: #ffcc00;
+            background: #555;
+        }
+        
+        .start-btn {
+            padding: 20px;
+            font-size: 28px;
+            background: linear-gradient(45deg, #2e7d32, #4caf50);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            margin-top: 20px;
+            font-weight: bold;
+        }
+        
+        .start-btn:hover {
+            background: linear-gradient(45deg, #388e3c, #66bb6a);
+            transform: scale(1.05);
+        }
+        
+        .back-btn {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            padding: 10px 20px;
+            background: #444;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            z-index: 300;
+        }
+        
+        /* Игровые элементы */
         .score { 
             position: absolute; 
             width: 100%; 
@@ -31,11 +146,11 @@
         }
         #score2 { 
             top: 160px; 
-            transform: rotate(180deg); 
         }
         #score1 { 
             bottom: 160px; 
         }
+        
         .joy-zone, .btn-fire { 
             position: fixed; 
             border-radius: 50%; 
@@ -70,31 +185,106 @@
             height: 130px; 
             transition: background-color 0.1s; 
         }
+        
+        /* Зеленая область для кнопки огня игрока 1 */
+        #p1-fire {
+            background: rgba(0,255,0,0.2);
+            box-shadow: 0 0 0 8px rgba(0, 255, 0, 0.2);
+        }
+        
+        /* Красная область для кнопки огня игрока 2 */
+        #p2-fire {
+            background: rgba(255,0,0,0.2);
+            box-shadow: 0 0 0 8px rgba(255, 0, 0, 0.2);
+        }
+        
         .fire-text { 
-            transform: rotate(180deg); 
             display: inline-block; 
+        }
+        
+        /* Индикатор режима */
+        #game-mode-indicator {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-size: 18px;
+            z-index: 300;
+        }
+        
+        /* Уведомление о ориентации */
+        #orientation-warning {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 2000;
+            color: white;
+            font-size: 24px;
+            text-align: center;
+            padding-top: 40%;
         }
     </style>
 </head>
 <body>
+    <!-- Предупреждение об ориентации -->
+    <div id="orientation-warning">
+        Пожалуйста, поверните устройство в альбомную ориентацию!
+    </div>
+    
+    <!-- Меню выбора режима -->
+    <div id="menu">
+        <h1 class="menu-title">БРОНЕТАНКИ</h1>
+        <div class="mode-buttons">
+            <button class="mode-btn active" data-mode="pvp">1 на 1 (PvP)</button>
+            <button class="mode-btn" data-mode="pve">Против ИИ (PvE)</button>
+            <button class="mode-btn" data-mode="survival">Выживание</button>
+        </div>
+        
+        <div id="difficulty-selector" style="display: none;">
+            <h3>Сложность ИИ:</h3>
+            <div class="difficulty-buttons">
+                <button class="diff-btn active" data-diff="easy">Легко</button>
+                <button class="diff-btn" data-diff="medium">Средне</button>
+                <button class="diff-btn" data-diff="hard">Сложно</button>
+                <button class="diff-btn" data-diff="insane">Безумие</button>
+            </div>
+        </div>
+        
+        <button class="start-btn" id="start-game">НАЧАТЬ ИГРУ</button>
+    </div>
+    
+    <!-- Игровое поле -->
     <div id="score2" class="score">0</div>
     <div id="score1" class="score">0</div>
+    <div id="game-mode-indicator" style="display: none;">PvP</div>
     <canvas id="gameCanvas"></canvas>
     
-    <!-- Игрок 1 (нижний, зеленый) -->
-    <div id="p1-fire" class="btn-fire" style="background: rgba(0,255,0,0.2); right: 20px; bottom: 20px;">
-        <span class="fire-text">ОГОНЬ</span>
-    </div>
-    <div id="p1-joy" class="joy-zone" style="left: 20px; bottom: 20px;">
-        <div id="p1-stick" class="stick" style="border: 2px solid #0f0;"></div>
+    <!-- Управление игроком 1 (нижний) -->
+    <div id="p1-controls">
+        <div id="p1-fire" class="btn-fire" style="right: 20px; bottom: 20px;">
+            <span class="fire-text">ОГОНЬ</span>
+        </div>
+        <div id="p1-joy" class="joy-zone" style="left: 20px; bottom: 20px;">
+            <div id="p1-stick" class="stick" style="border: 2px solid #0f0;"></div>
+        </div>
     </div>
     
-    <!-- Игрок 2 (верхний, красный) -->
-    <div id="p2-fire" class="btn-fire" style="background: rgba(255,0,0,0.2); left: 20px; top: 20px; transform: rotate(180deg);">
-        <span class="fire-text">ОГОНЬ</span>
-    </div>
-    <div id="p2-joy" class="joy-zone" style="right: 20px; top: 20px;">
-        <div id="p2-stick" class="stick" style="border: 2px solid #f00;"></div>
+    <!-- Управление игроком 2 (верхний) -->
+    <div id="p2-controls">
+        <div id="p2-fire" class="btn-fire" style="left: 20px; top: 20px;">
+            <span class="fire-text">ОГОНЬ</span>
+        </div>
+        <div id="p2-joy" class="joy-zone" style="right: 20px; top: 20px;">
+            <div id="p2-stick" class="stick" style="border: 2px solid #f00;"></div>
+        </div>
     </div>
 
 <script>
@@ -134,10 +324,19 @@ const CONFIG = {
     AUDIO: {
         VOLUME: 0.05,
         FADE_DURATION: 0.1
+    },
+    AI: {
+        UPDATE_INTERVAL: 100,
+        DIFFICULTY: {
+            easy: { accuracy: 0.3, reaction: 800, aggression: 0.3, dodgeChance: 0.2 },
+            medium: { accuracy: 0.6, reaction: 500, aggression: 0.5, dodgeChance: 0.4 },
+            hard: { accuracy: 0.8, reaction: 300, aggression: 0.7, dodgeChance: 0.6 },
+            insane: { accuracy: 0.95, reaction: 150, aggression: 0.9, dodgeChance: 0.8 }
+        }
     }
 };
 
-// ========== ИНИЦИАЛИЗАЦИЯ ==========
+// ========== ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ==========
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -146,13 +345,21 @@ let bullets = [];
 let particles = [];
 let sosTanks = [];
 let bricks = [];
+let tanks = [];
+let gameMode = 'pvp';
+let aiDifficulty = 'medium';
+let aiPlayer = null;
+let lastAIUpdate = 0;
+let isGameActive = false;
+let isPortraitMode = false;
 
 // ========== КЛАСС ТАНКА ==========
 class Tank {
-    constructor(id, color, isBottomPlayer) {
+    constructor(id, color, isBottomPlayer, isAI = false) {
         this.id = id;
         this.color = color;
         this.isBottomPlayer = isBottomPlayer;
+        this.isAI = isAI;
         this.reset();
     }
     
@@ -168,6 +375,8 @@ class Tank {
         this.slow = 1;
         this.sosBuffer = [];
         this.lastDownTime = 0;
+        this.lastShotTime = 0;
+        this.shootCooldown = 800;
     }
     
     get isAlive() {
@@ -175,10 +384,499 @@ class Tank {
     }
 }
 
-const tanks = [
-    new Tank(0, '#2e7d32', true),   // Игрок 1 (нижний)
-    new Tank(1, '#c62828', false)   // Игрок 2 (верхний)
-];
+// ========== КЛАСС ИИ ==========
+class AI {
+    constructor(tank, difficulty = 'medium') {
+        this.tank = tank;
+        this.difficulty = difficulty;
+        this.config = CONFIG.AI.DIFFICULTY[difficulty];
+        this.state = 'patrol';
+        this.targetPosition = { x: 0, y: 0 };
+        this.lastDecisionTime = 0;
+        this.dodgeTimer = 0;
+        this.patrolPoints = [];
+        this.waypointIndex = 0;
+    }
+    
+    update(targetTank) {
+        const now = Date.now();
+        if (now - this.lastDecisionTime < this.config.reaction) {
+            return;
+        }
+        
+        this.lastDecisionTime = now;
+        
+        if (!this.tank.isAlive) {
+            this.tank.dx = 0;
+            this.tank.dy = 0;
+            return;
+        }
+        
+        const distance = Math.hypot(targetTank.x - this.tank.x, targetTank.y - this.tank.y);
+        
+        if (this.shouldDodge()) {
+            this.dodgeBullets();
+            return;
+        }
+        
+        if (distance < 150) {
+            this.state = 'retreat';
+            this.retreatFrom(targetTank);
+        } else if (distance < 400) {
+            this.state = 'attack';
+            this.attackTarget(targetTank);
+        } else {
+            this.state = 'patrol';
+            this.patrol();
+        }
+        
+        this.handleShooting(targetTank);
+    }
+    
+    shouldDodge() {
+        for (const bullet of bullets) {
+            if (bullet.owner !== this.tank.id) {
+                const distance = Math.hypot(bullet.x - this.tank.x, bullet.y - this.tank.y);
+                if (distance < 100 && Math.random() < this.config.dodgeChance) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+    
+    dodgeBullets() {
+        let closestBullet = null;
+        let minDistance = Infinity;
+        
+        for (const bullet of bullets) {
+            if (bullet.owner !== this.tank.id) {
+                const distance = Math.hypot(bullet.x - this.tank.x, bullet.y - this.tank.y);
+                if (distance < minDistance) {
+                    minDistance = distance;
+                    closestBullet = bullet;
+                }
+            }
+        }
+        
+        if (closestBullet) {
+            const bulletAngle = closestBullet.angle;
+            const dodgeAngle = bulletAngle + Math.PI / 2 * (Math.random() > 0.5 ? 1 : -1);
+            
+            this.tank.dx = Math.cos(dodgeAngle) * 0.8;
+            this.tank.dy = Math.sin(dodgeAngle) * 0.8;
+            this.dodgeTimer = 10;
+        }
+    }
+    
+    attackTarget(target) {
+        const moveChance = Math.random() < this.config.aggression ? 0.8 : 0.4;
+        
+        if (moveChance > 0.5) {
+            const angleToTarget = Math.atan2(target.y - this.tank.y, target.x - this.tank.x);
+            this.tank.dx = Math.cos(angleToTarget) * 0.7;
+            this.tank.dy = Math.sin(angleToTarget) * 0.7;
+        } else {
+            this.tank.dx = 0;
+            this.tank.dy = 0;
+        }
+        
+        this.tank.angle = Math.atan2(target.y - this.tank.y, target.x - this.tank.x);
+    }
+    
+    retreatFrom(target) {
+        const angleFromTarget = Math.atan2(this.tank.y - target.y, this.tank.x - target.x);
+        const randomAngle = angleFromTarget + (Math.random() - 0.5) * 0.5;
+        
+        this.tank.dx = Math.cos(randomAngle) * 0.6;
+        this.tank.dy = Math.sin(randomAngle) * 0.6;
+        this.tank.angle = Math.atan2(target.y - this.tank.y, target.x - this.tank.x);
+    }
+    
+    patrol() {
+        if (this.patrolPoints.length === 0) {
+            this.generatePatrolPoints();
+        }
+        
+        const currentPoint = this.patrolPoints[this.waypointIndex];
+        const distance = Math.hypot(currentPoint.x - this.tank.x, currentPoint.y - this.tank.y);
+        
+        if (distance < 50) {
+            this.waypointIndex = (this.waypointIndex + 1) % this.patrolPoints.length;
+        }
+        
+        const targetPoint = this.patrolPoints[this.waypointIndex];
+        const angleToPoint = Math.atan2(targetPoint.y - this.tank.y, targetPoint.x - this.tank.x);
+        
+        this.tank.dx = Math.cos(angleToPoint) * 0.4;
+        this.tank.dy = Math.sin(angleToPoint) * 0.4;
+        this.tank.angle = angleToPoint;
+    }
+    
+    generatePatrolPoints() {
+        const top = 100;
+        const bottom = canvas.height - 100;
+        const left = 100;
+        const right = canvas.width - 100;
+        
+        this.patrolPoints = [
+            { x: left + (right - left) * 0.3, y: top + (bottom - top) * 0.3 },
+            { x: right - (right - left) * 0.3, y: top + (bottom - top) * 0.3 },
+            { x: right - (right - left) * 0.3, y: bottom - (bottom - top) * 0.3 },
+            { x: left + (right - left) * 0.3, y: bottom - (bottom - top) * 0.3 }
+        ];
+        
+        this.patrolPoints.sort(() => Math.random() - 0.5);
+        this.waypointIndex = 0;
+    }
+    
+    handleShooting(target) {
+        const now = Date.now();
+        
+        if (now - this.tank.lastShotTime < this.tank.shootCooldown) {
+            return;
+        }
+        
+        const distance = Math.hypot(target.x - this.tank.x, target.y - this.tank.y);
+        const distanceFactor = Math.max(0, 1 - distance / 600);
+        const shootChance = this.config.accuracy * distanceFactor * (Math.random() * 0.3 + 0.85);
+        const stateBonus = this.state === 'attack' ? 0.3 : 0;
+        
+        if (Math.random() < shootChance + stateBonus) {
+            this.shoot();
+        }
+    }
+    
+    shoot() {
+        const now = Date.now();
+        this.tank.lastShotTime = now;
+        
+        const inaccuracy = (1 - this.config.accuracy) * 0.3;
+        const angleVariation = (Math.random() - 0.5) * inaccuracy;
+        
+        bullets.push({
+            x: this.tank.x + Math.cos(this.tank.angle + angleVariation) * 35,
+            y: this.tank.y + Math.sin(this.tank.angle + angleVariation) * 35,
+            angle: this.tank.angle + angleVariation,
+            owner: this.tank.id,
+            isFromSOS: false
+        });
+        
+        AudioManager.playShoot();
+    }
+}
+
+// ========== ПРОВЕРКА ОРИЕНТАЦИИ ==========
+function checkOrientation() {
+    const warning = document.getElementById('orientation-warning');
+    
+    if (window.innerHeight > window.innerWidth) {
+        isPortraitMode = true;
+        warning.style.display = 'block';
+        menu.style.display = 'none';
+        backBtn.style.display = 'none';
+        return false;
+    } else {
+        isPortraitMode = false;
+        warning.style.display = 'none';
+        return true;
+    }
+}
+
+window.addEventListener('resize', checkOrientation);
+window.addEventListener('orientationchange', checkOrientation);
+checkOrientation();
+
+// ========== МЕНЮ И УПРАВЛЕНИЕ ИГРОЙ ==========
+const menu = document.getElementById('menu');
+const startBtn = document.getElementById('start-game');
+const modeButtons = document.querySelectorAll('.mode-btn');
+const diffButtons = document.querySelectorAll('.diff-btn');
+const difficultySelector = document.getElementById('difficulty-selector');
+const gameModeIndicator = document.getElementById('game-mode-indicator');
+const p2Controls = document.getElementById('p2-controls');
+
+modeButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+        if (isPortraitMode) return;
+        
+        modeButtons.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        gameMode = btn.dataset.mode;
+        
+        if (gameMode === 'pve') {
+            difficultySelector.style.display = 'block';
+        } else {
+            difficultySelector.style.display = 'none';
+        }
+        
+        const modeNames = {
+            'pvp': '1 на 1 (PvP)',
+            'pve': 'Против ИИ (PvE)',
+            'survival': 'Выживание'
+        };
+        gameModeIndicator.textContent = modeNames[gameMode];
+    });
+});
+
+diffButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+        diffButtons.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        aiDifficulty = btn.dataset.diff;
+    });
+});
+
+startBtn.addEventListener('click', () => {
+    if (isPortraitMode) return;
+    startGame();
+});
+
+const backBtn = document.createElement('button');
+backBtn.className = 'back-btn';
+backBtn.textContent = 'В меню';
+backBtn.style.display = 'none';
+document.body.appendChild(backBtn);
+
+backBtn.addEventListener('click', () => {
+    returnToMenu();
+});
+
+// ========== СИСТЕМА УПРАВЛЕНИЯ ==========
+class ControlSystem {
+    constructor() {
+        this.activeTouches = new Map();
+        this.joyActivePointers = new Map();
+        this.fireActivePointers = new Map();
+    }
+    
+    initPlayerControls(joyId, fireId, playerIndex) {
+        const joy = document.getElementById(joyId);
+        const fire = document.getElementById(fireId);
+        const stick = joy.querySelector('.stick');
+        
+        // Убираем все старые обработчики
+        joy.replaceWith(joy.cloneNode(true));
+        fire.replaceWith(fire.cloneNode(true));
+        
+        // Получаем обновленные элементы
+        const newJoy = document.getElementById(joyId);
+        const newFire = document.getElementById(fireId);
+        const newStick = newJoy.querySelector('.stick');
+        
+        const tank = tanks[playerIndex];
+        const playerType = playerIndex === 0 ? 'p1' : 'p2';
+        
+        // Джойстик - используем отдельные обработчики для каждого игрока
+        newJoy.addEventListener('pointerdown', (e) => {
+            e.preventDefault();
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            
+            const pointerId = e.pointerId;
+            this.joyActivePointers.set(pointerId, playerType);
+            newJoy.setPointerCapture(pointerId);
+            this.handleJoyMove(e, newJoy, newStick, tank);
+        });
+        
+        newJoy.addEventListener('pointermove', (e) => {
+            e.preventDefault();
+            if (this.joyActivePointers.has(e.pointerId)) {
+                this.handleJoyMove(e, newJoy, newStick, tank);
+            }
+        });
+        
+        newJoy.addEventListener('pointerup', (e) => {
+            e.preventDefault();
+            const pointerId = e.pointerId;
+            
+            if (this.joyActivePointers.get(pointerId) === playerType) {
+                newStick.style.transform = '';
+                tank.dx = 0;
+                tank.dy = 0;
+                this.joyActivePointers.delete(pointerId);
+            }
+        });
+        
+        newJoy.addEventListener('pointercancel', (e) => {
+            e.preventDefault();
+            const pointerId = e.pointerId;
+            
+            if (this.joyActivePointers.get(pointerId) === playerType) {
+                newStick.style.transform = '';
+                tank.dx = 0;
+                tank.dy = 0;
+                this.joyActivePointers.delete(pointerId);
+            }
+        });
+        
+        // Кнопка огня - используем отдельные обработчики
+        newFire.addEventListener('pointerdown', (e) => {
+            e.preventDefault();
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            
+            const pointerId = e.pointerId;
+            this.fireActivePointers.set(pointerId, playerType);
+            newFire.style.backgroundColor = 'rgba(255,255,255,0.3)';
+            
+            // Начало SOS-последовательности
+            handleSOS(playerIndex, true);
+            
+            // Выстрел
+            if (tank.isAlive) {
+                const now = Date.now();
+                if (now - tank.lastShotTime > tank.shootCooldown) {
+                    bullets.push({
+                        x: tank.x + Math.cos(tank.angle) * 35,
+                        y: tank.y + Math.sin(tank.angle) * 35,
+                        angle: tank.angle,
+                        owner: tank.id,
+                        isFromSOS: false
+                    });
+                    AudioManager.playShoot();
+                    tank.lastShotTime = now;
+                }
+            }
+        });
+        
+        newFire.addEventListener('pointerup', (e) => {
+            e.preventDefault();
+            const pointerId = e.pointerId;
+            
+            if (this.fireActivePointers.get(pointerId) === playerType) {
+                newFire.style.backgroundColor = '';
+                handleSOS(playerIndex, false);
+                this.fireActivePointers.delete(pointerId);
+            }
+        });
+        
+        newFire.addEventListener('pointercancel', (e) => {
+            e.preventDefault();
+            const pointerId = e.pointerId;
+            
+            if (this.fireActivePointers.get(pointerId) === playerType) {
+                newFire.style.backgroundColor = '';
+                this.fireActivePointers.delete(pointerId);
+            }
+        });
+        
+        // Предотвращаем контекстное меню
+        newJoy.addEventListener('contextmenu', e => e.preventDefault());
+        newFire.addEventListener('contextmenu', e => e.preventDefault());
+    }
+    
+    handleJoyMove(e, joy, stick, tank) {
+        const rect = joy.getBoundingClientRect();
+        const centerX = rect.width / 2;
+        const centerY = rect.height / 2;
+        
+        const rawX = e.clientX - (rect.left + centerX);
+        const rawY = e.clientY - (rect.top + centerY);
+        
+        const maxDistance = centerX - 10;
+        const distance = Math.min(maxDistance, Math.hypot(rawX, rawY));
+        const angle = Math.atan2(rawY, rawX);
+        
+        // Позиция стика
+        const scale = distance / (Math.hypot(rawX, rawY) || 1);
+        stick.style.transform = `translate(${rawX * scale}px, ${rawY * scale}px)`;
+        
+        // Направление танка - ТОЛЬКО если танк двигается
+        // Угол поворота определяется отдельно от направления движения
+        if (distance > 10) { // Минимальное расстояние для движения
+            tank.dx = Math.cos(angle) * (distance / maxDistance);
+            tank.dy = Math.sin(angle) * (distance / maxDistance);
+            
+            // Угол поворота танка равен углу движения
+            tank.angle = angle;
+        } else {
+            // Если палец близко к центру - останавливаемся, но не меняем угол
+            tank.dx = 0;
+            tank.dy = 0;
+        }
+    }
+    
+    clearAll() {
+        this.joyActivePointers.clear();
+        this.fireActivePointers.clear();
+        
+        // Сбрасываем все танки
+        tanks.forEach(tank => {
+            tank.dx = 0;
+            tank.dy = 0;
+        });
+        
+        // Сбрасываем все стики
+        document.querySelectorAll('.stick').forEach(stick => {
+            stick.style.transform = '';
+        });
+        
+        // Сбрасываем кнопки огня
+        document.querySelectorAll('.btn-fire').forEach(btn => {
+            btn.style.backgroundColor = '';
+        });
+    }
+}
+
+const controlSystem = new ControlSystem();
+
+// ========== ФУНКЦИИ УПРАВЛЕНИЯ ИГРОЙ ==========
+function startGame() {
+    menu.style.display = 'none';
+    gameModeIndicator.style.display = 'block';
+    backBtn.style.display = 'block';
+    
+    if (gameMode === 'pve') {
+        p2Controls.style.display = 'none';
+    } else {
+        p2Controls.style.display = 'block';
+    }
+    
+    initGame();
+    isGameActive = true;
+}
+
+function returnToMenu() {
+    menu.style.display = 'flex';
+    gameModeIndicator.style.display = 'none';
+    backBtn.style.display = 'none';
+    
+    isGameActive = false;
+    bullets = [];
+    particles = [];
+    sosTanks = [];
+    
+    // Очищаем управление
+    controlSystem.clearAll();
+    
+    p2Controls.style.display = 'block';
+}
+
+function initGame() {
+    bullets = [];
+    particles = [];
+    sosTanks = [];
+    tanks = [];
+    
+    if (gameMode === 'pvp' || gameMode === 'survival') {
+        tanks.push(new Tank(0, '#2e7d32', true));
+        tanks.push(new Tank(1, '#c62828', false));
+    } else if (gameMode === 'pve') {
+        tanks.push(new Tank(0, '#2e7d32', true));
+        const aiTank = new Tank(1, '#c62828', false, true);
+        tanks.push(aiTank);
+        aiPlayer = new AI(aiTank, aiDifficulty);
+    }
+    
+    tanks.forEach(tank => tank.score = 0);
+    updateScoreDisplay();
+    createBricks();
+    
+    // Инициализируем управление после создания танков
+    controlSystem.initPlayerControls('p1-joy', 'p1-fire', 0);
+    if (gameMode !== 'pve') {
+        controlSystem.initPlayerControls('p2-joy', 'p2-fire', 1);
+    }
+}
 
 // ========== АУДИО МЕНЕДЖЕР ==========
 const AudioManager = {
@@ -238,14 +936,14 @@ function createBricks() {
     const centerX = canvas.width / 2;
     
     // Нижнее укрытие (для игрока 1)
-    addBrickWall(centerX - 75, canvas.height - 180, 6, 1);  // Верхняя перекладина
-    addBrickWall(centerX - 75, canvas.height - 165, 1, 3);  // Левая стена
-    addBrickWall(centerX + 50, canvas.height - 165, 1, 3);  // Правая стена
+    addBrickWall(centerX - 75, canvas.height - 180, 6, 1);
+    addBrickWall(centerX - 75, canvas.height - 165, 1, 3);
+    addBrickWall(centerX + 50, canvas.height - 165, 1, 3);
     
-    // Верхнее укрытие (для игрока 2)
-    addBrickWall(centerX - 75, 165, 6, 1);  // Нижняя перекладина
-    addBrickWall(centerX - 75, 105, 1, 4);  // Левая стена
-    addBrickWall(centerX + 50, 105, 1, 4);  // Правая стена
+    // Верхнее укрытие (для игрока 2 или ИИ)
+    addBrickWall(centerX - 75, 165, 6, 1);
+    addBrickWall(centerX - 75, 105, 1, 4);
+    addBrickWall(centerX + 50, 105, 1, 4);
 }
 
 // ========== ОТРИСОВКА ==========
@@ -256,7 +954,6 @@ function drawBrick(brick) {
     ctx.strokeStyle = CONFIG.BRICK.BORDER_COLOR;
     ctx.strokeRect(brick.x, brick.y, brick.w, brick.h);
     
-    // Эффект объема
     ctx.fillStyle = 'rgba(0,0,0,0.2)';
     ctx.fillRect(brick.x + brick.w - 6, brick.y + 2, 4, brick.h - 4);
 }
@@ -287,32 +984,50 @@ function drawTank(tank, isSOSTank = false) {
     ctx.fillStyle = (tank.slow < 1 && !isSOSTank) ? '#00fbff' : '#222';
     ctx.fillRect(8, -3, 22, 6);
     
+    // Индикатор ИИ
+    if (tank.isAI && !isSOSTank) {
+        ctx.fillStyle = '#ffcc00';
+        ctx.font = '10px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('ИИ', -2, -20);
+    }
+    
     ctx.restore();
     
-    // Полоска здоровья
-    const healthBarWidth = 40;
-    const healthBarHeight = 6;
-    const healthBarX = tank.x - healthBarWidth / 2;
-    const healthBarY = tank.y - 35;
-    
-    // Фон полоски
-    ctx.fillStyle = '#000';
-    ctx.fillRect(healthBarX, healthBarY, healthBarWidth, healthBarHeight);
-    
-    // Заполнение здоровья
-    const healthRatio = tank.hp / (isSOSTank ? 1 : tank.maxHp);
-    ctx.fillStyle = isSOSTank ? '#aaa' : (tank.hp > 1 ? '#0f0' : '#f00');
-    ctx.fillRect(healthBarX, healthBarY, healthBarWidth * healthRatio, healthBarHeight);
+    // Полоска здоровья ТОЛЬКО для игровых танков
+    if (!isSOSTank && tank.isAlive) {
+        const healthBarWidth = 40;
+        const healthBarHeight = 6;
+        
+        // Позиция полоски здоровья ЗА танком
+        const healthBarDistance = 35;
+        const healthBarAngle = tank.angle + Math.PI;
+        
+        const healthBarX = tank.x + Math.cos(healthBarAngle) * healthBarDistance - healthBarWidth / 2;
+        const healthBarY = tank.y + Math.sin(healthBarAngle) * healthBarDistance - healthBarHeight / 2;
+        
+        // Фон полоски
+        ctx.fillStyle = '#000';
+        ctx.fillRect(healthBarX, healthBarY, healthBarWidth, healthBarHeight);
+        
+        // Заполнение здоровья
+        const healthRatio = tank.hp / tank.maxHp;
+        ctx.fillStyle = tank.hp > 1 ? '#0f0' : '#f00';
+        ctx.fillRect(healthBarX, healthBarY, healthBarWidth * healthRatio, healthBarHeight);
+    }
 }
 
 // ========== ОБНОВЛЕНИЕ ИГРЫ ==========
 function updateTanks() {
     tanks.forEach(tank => {
+        if (!tank.isAlive) return;
+        
+        // Движение танка
         if (tank.dx !== 0 || tank.dy !== 0) {
             const newX = tank.x + tank.dx * CONFIG.TANK.SPEED * tank.slow;
             const newY = tank.y + tank.dy * CONFIG.TANK.SPEED * tank.slow;
             
-            // Проверка столкновений с кирпичами
+            // Проверка столкновений
             const isColliding = bricks.some(brick => 
                 newX + CONFIG.TANK.RADIUS > brick.x &&
                 newX - CONFIG.TANK.RADIUS < brick.x + brick.w &&
@@ -320,7 +1035,7 @@ function updateTanks() {
                 newY - CONFIG.TANK.RADIUS < brick.y + brick.h
             );
             
-            // Проверка границ экрана
+            // Проверка границ
             const isInBounds = 
                 newX > CONFIG.TANK.RADIUS &&
                 newX < canvas.width - CONFIG.TANK.RADIUS &&
@@ -331,19 +1046,29 @@ function updateTanks() {
                 tank.x = newX;
                 tank.y = newY;
             }
-            
-            tank.angle = Math.atan2(tank.dy, tank.dx);
         }
         
-        // Восстановление скорости после замедления
+        // Восстановление скорости
         if (tank.slow < 1) {
             tank.slow += CONFIG.TANK.SLOW_RECOVERY;
         }
         
-        if (tank.isAlive) {
-            drawTank(tank);
-        }
+        drawTank(tank);
     });
+}
+
+function updateAI() {
+    if (gameMode !== 'pve' || !aiPlayer || !tanks[1] || !tanks[0]) return;
+    
+    const now = Date.now();
+    if (now - lastAIUpdate > CONFIG.AI.UPDATE_INTERVAL) {
+        aiPlayer.update(tanks[0]);
+        lastAIUpdate = now;
+    }
+    
+    if (aiPlayer.dodgeTimer > 0) {
+        aiPlayer.dodgeTimer--;
+    }
 }
 
 function updateSOSTanks() {
@@ -351,14 +1076,12 @@ function updateSOSTanks() {
         const sosTank = sosTanks[i];
         const target = tanks[1 - sosTank.owner];
         
-        // Движение к цели
         const distance = Math.hypot(target.x - sosTank.x, target.y - sosTank.y);
         
         if (distance > 60) {
             const newX = sosTank.x + Math.cos(sosTank.angle) * CONFIG.SOS.TANK_SPEED;
             const newY = sosTank.y + Math.sin(sosTank.angle) * CONFIG.SOS.TANK_SPEED;
             
-            // Проверка столкновений
             const isColliding = bricks.some(brick => 
                 newX + 18 > brick.x &&
                 newX - 18 < brick.x + brick.w &&
@@ -373,9 +1096,9 @@ function updateSOSTanks() {
             }
         }
         
+        // Отрисовываем SOS танк БЕЗ полоски здоровья
         drawTank(sosTank, true);
         
-        // Случайная стрельба
         if (Math.random() < 0.015) {
             bullets.push({
                 x: sosTank.x,
@@ -386,7 +1109,6 @@ function updateSOSTanks() {
             });
         }
         
-        // Уменьшение времени жизни
         sosTank.life--;
         if (sosTank.life <= 0) {
             sosTanks.splice(i, 1);
@@ -398,17 +1120,14 @@ function updateBullets() {
     for (let i = bullets.length - 1; i >= 0; i--) {
         const bullet = bullets[i];
         
-        // Движение пули
         bullet.x += Math.cos(bullet.angle) * CONFIG.BULLET.SPEED;
         bullet.y += Math.sin(bullet.angle) * CONFIG.BULLET.SPEED;
         
-        // Отрисовка пули
         ctx.fillStyle = bullet.isFromSOS ? CONFIG.BULLET.SOS_COLOR : CONFIG.BULLET.PLAYER_COLOR;
         ctx.beginPath();
         ctx.arc(bullet.x, bullet.y, CONFIG.BULLET.RADIUS, 0, Math.PI * 2);
         ctx.fill();
         
-        // Столкновение с кирпичами
         const hitBrick = bricks.some(brick => 
             bullet.x > brick.x &&
             bullet.x < brick.x + brick.w &&
@@ -422,7 +1141,6 @@ function updateBullets() {
             continue;
         }
         
-        // Столкновение с танками
         let hitTank = false;
         
         for (const tank of tanks) {
@@ -440,18 +1158,14 @@ function updateBullets() {
                 
                 AudioManager.playTankHit();
                 
-                // Смерть танка
                 if (tank.hp <= 0) {
-                    // Начисление очков
                     if (!bullet.isFromSOS) {
                         tanks[bullet.owner].score++;
                         updateScoreDisplay();
                     }
                     
-                    // Эффект взрыва
                     createExplosion(tank.x, tank.y);
                     
-                    // Респаун танка
                     tank.hp = tank.maxHp;
                     tank.slow = 1;
                     tank.x = canvas.width / 2;
@@ -467,7 +1181,6 @@ function updateBullets() {
             continue;
         }
         
-        // Выход за границы
         if (bullet.x < 0 || bullet.x > canvas.width || bullet.y < 0 || bullet.y > canvas.height) {
             bullets.splice(i, 1);
         }
@@ -512,198 +1225,111 @@ function updateScoreDisplay() {
     document.getElementById('score2').textContent = tanks[1].score;
 }
 
-// ========== УПРАВЛЕНИЕ ИГРОКА ==========
-class PlayerController {
-    constructor(joyElementId, fireElementId, stickElementId, playerIndex) {
-        this.joyElement = document.getElementById(joyElementId);
-        this.fireElement = document.getElementById(fireElementId);
-        this.stickElement = document.getElementById(stickElementId);
-        this.playerIndex = playerIndex;
-        this.isFirePressed = false;
-        
-        this.init();
-    }
+// ========== ОБРАБОТКА SOS ==========
+function handleSOS(playerIndex, isDown) {
+    const tank = tanks[playerIndex];
+    const now = Date.now();
     
-    init() {
-        this.initJoypad();
-        this.initFireButton();
-    }
-    
-    initJoypad() {
-        this.joyElement.addEventListener('pointerdown', (event) => {
-            this.resumeAudio();
-            this.joyElement.setPointerCapture(event.pointerId);
-        });
+    if (isDown) {
+        tank.lastDownTime = now;
+    } else {
+        const duration = now - tank.lastDownTime;
+        let signalType = null;
         
-        this.joyElement.addEventListener('pointermove', (event) => {
-            if (!this.joyElement.hasPointerCapture(event.pointerId)) return;
-            
-            const rect = this.joyElement.getBoundingClientRect();
-            const centerX = rect.width / 2;
-            const centerY = rect.height / 2;
-            
-            const rawX = event.clientX - (rect.left + centerX);
-            const rawY = event.clientY - (rect.top + centerY);
-            
-            const maxDistance = centerX - 10;
-            const distance = Math.min(maxDistance, Math.hypot(rawX, rawY));
-            const angle = Math.atan2(rawY, rawX);
-            
-            // Позиция стика
-            const scale = distance / (Math.hypot(rawX, rawY) || 1);
-            this.stickElement.style.transform = `translate(${rawX * scale}px, ${rawY * scale}px)`;
-            
-            // Направление танка
-            const tank = tanks[this.playerIndex];
-            tank.dx = Math.cos(angle) * (distance / maxDistance);
-            tank.dy = Math.sin(angle) * (distance / maxDistance);
-        });
-        
-        this.joyElement.addEventListener('pointerup', () => {
-            this.stickElement.style.transform = '';
-            
-            const tank = tanks[this.playerIndex];
-            tank.dx = 0;
-            tank.dy = 0;
-        });
-    }
-    
-    initFireButton() {
-        this.fireElement.addEventListener('pointerdown', (event) => {
-            event.preventDefault();
-            this.resumeAudio();
-            
-            this.isFirePressed = true;
-            this.fireElement.style.backgroundColor = 'rgba(255,255,255,0.3)';
-            
-            // Начало SOS-последовательности
-            this.handleSOS(true);
-            
-            // Выстрел
-            const tank = tanks[this.playerIndex];
-            if (tank.isAlive) {
-                bullets.push({
-                    x: tank.x + Math.cos(tank.angle) * 35,
-                    y: tank.y + Math.sin(tank.angle) * 35,
-                    angle: tank.angle,
-                    owner: tank.id,
-                    isFromSOS: false
-                });
-                AudioManager.playShoot();
-            }
-        });
-        
-        this.fireElement.addEventListener('pointerup', (event) => {
-            event.preventDefault();
-            this.isFirePressed = false;
-            this.fireElement.style.backgroundColor = '';
-            
-            // Конец SOS-последовательности
-            this.handleSOS(false);
-        });
-    }
-    
-    handleSOS(isStart) {
-        const tank = tanks[this.playerIndex];
-        const now = Date.now();
-        
-        if (isStart) {
-            tank.lastDownTime = now;
-        } else {
-            const duration = now - tank.lastDownTime;
-            let signalType = null;
-            
-            if (duration < CONFIG.SOS.DOT_MAX_TIME) {
-                signalType = '.';
-            } else if (duration > CONFIG.SOS.DASH_MIN_TIME) {
-                signalType = '-';
-            }
-            
-            if (signalType) {
-                tank.sosBuffer.push(signalType);
-                
-                if (tank.sosBuffer.length > CONFIG.SOS.MAX_BUFFER) {
-                    tank.sosBuffer.shift();
-                }
-                
-                if (tank.sosBuffer.join('') === CONFIG.SOS.SEQUENCE) {
-                    this.spawnSOS(tank.id);
-                    tank.sosBuffer = [];
-                }
-            }
+        if (duration < 250) {
+            signalType = '.';
+        } else if (duration > 400) {
+            signalType = '-';
         }
-    }
-    
-    spawnSOS(playerId) {
-        const spawnPoints = [
-            { x: -60, y: canvas.height / 2 },
-            { x: canvas.width + 60, y: canvas.height / 2 },
-            { x: canvas.width / 2, y: -60 },
-            { x: canvas.width / 2, y: canvas.height + 60 }
-        ];
         
-        for (let i = 0; i < CONFIG.SOS.TANK_COUNT; i++) {
-            const point = spawnPoints[i % 4];
+        if (signalType) {
+            tank.sosBuffer.push(signalType);
             
-            sosTanks.push({
-                x: point.x + (Math.random() - 0.5) * 50,
-                y: point.y + (Math.random() - 0.5) * 50,
-                angle: 0,
-                color: tanks[playerId].color,
-                owner: playerId,
-                life: CONFIG.SOS.TANK_LIFE
-            });
-        }
-    }
-    
-    resumeAudio() {
-        if (audioCtx.state === 'suspended') {
-            audioCtx.resume();
+            if (tank.sosBuffer.length > 9) {
+                tank.sosBuffer.shift();
+            }
+            
+            if (tank.sosBuffer.join('') === '...---...') {
+                spawnSOS(playerIndex);
+                tank.sosBuffer = [];
+            }
         }
     }
 }
 
-// ========== ИНИЦИАЛИЗАЦИЯ ИГРЫ ==========
+function spawnSOS(playerIndex) {
+    const sides = [
+        { x: -60, y: canvas.height / 2 },
+        { x: canvas.width + 60, y: canvas.height / 2 },
+        { x: canvas.width / 2, y: -60 },
+        { x: canvas.width / 2, y: canvas.height + 60 }
+    ];
+    
+    for (let i = 0; i < 8; i++) {
+        const side = sides[i % 4];
+        sosTanks.push({
+            x: side.x + (Math.random() - 0.5) * 50,
+            y: side.y + (Math.random() - 0.5) * 50,
+            angle: 0,
+            color: tanks[playerIndex].color,
+            owner: playerIndex,
+            life: 600
+        });
+    }
+}
+
+// ========== ИГРОВОЙ ЦИКЛ ==========
 function resizeCanvas() {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
     
-    // Перемещение танков в стартовые позиции
-    tanks.forEach(tank => {
-        tank.x = canvas.width / 2;
-        tank.y = tank.isBottomPlayer ? canvas.height - 80 : 80;
-    });
+    if (tanks.length > 0) {
+        tanks.forEach(tank => {
+            tank.x = canvas.width / 2;
+            tank.y = tank.isBottomPlayer ? canvas.height - 80 : 80;
+        });
+    }
     
-    // Пересоздание укрытий
     createBricks();
 }
 
-// Инициализация контроллеров
-const controllers = [
-    new PlayerController('p1-joy', 'p1-fire', 'p1-stick', 0),
-    new PlayerController('p2-joy', 'p2-fire', 'p2-stick', 1)
-];
-
-// Основной игровой цикл
 function gameLoop() {
-    // Очистка экрана
+    if (!isGameActive) return;
+    
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     
-    // Отрисовка всех объектов
     bricks.forEach(drawBrick);
+    
     updateTanks();
+    updateAI();
     updateSOSTanks();
     updateBullets();
     updateParticles();
     
-    // Следующий кадр
     requestAnimationFrame(gameLoop);
 }
 
-// Запуск игры
+// ========== ЗАПУСК ИГРЫ ==========
 window.addEventListener('resize', resizeCanvas);
-resizeCanvas();
-gameLoop();
+
+// Запускаем игру после загрузки
+window.addEventListener('load', () => {
+    resizeCanvas();
+    
+    // Показываем меню
+    menu.style.display = 'flex';
+    
+    // Начинаем игровой цикл
+    gameLoop();
+});
+
+// Предотвращаем масштабирование и другие жесты
+document.addEventListener('gesturestart', e => e.preventDefault());
+document.addEventListener('gesturechange', e => e.preventDefault());
+document.addEventListener('gestureend', e => e.preventDefault());
+
+// Предотвращаем выделение текста при касании
+document.addEventListener('selectstart', e => e.preventDefault());
 </script>
 </body>
 </html>
