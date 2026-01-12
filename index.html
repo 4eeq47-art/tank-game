@@ -5,113 +5,33 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Tanks: Armored Bricks</title>
     <style>
-        body { 
-            margin: 0; 
-            padding: 0;
-            background: #222; 
-            overflow: hidden; 
-            touch-action: none; 
-            font-family: 'Arial', sans-serif; 
-            -webkit-user-select: none; 
-            user-select: none;
-        }
-        canvas { 
-            display: block; 
-            background: #333;
-            width: 100%;
-            height: 100%;
-        }
-        
-        /* Меню */
-        #menu {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0, 0, 0, 0.9);
-            z-index: 1000;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            color: white;
-        }
-        
+        body { margin: 0; padding: 0; background: #222; overflow: hidden; touch-action: none; font-family: 'Arial', sans-serif; -webkit-user-select: none; user-select: none; }
+        canvas { display: block; background: #333; width: 100vw; height: 100vh; }
+        #menu { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.9); z-index: 1000; display: flex; flex-direction: column; justify-content: center; align-items: center; color: white; }
         .menu-title { font-size: 48px; margin-bottom: 40px; color: #ffcc00; }
-        
         .mode-buttons { display: flex; flex-direction: column; gap: 15px; width: 280px; }
-        
-        .mode-btn {
-            padding: 15px; font-size: 20px; border: none; border-radius: 8px;
-            background: #444; color: white; cursor: pointer; transition: 0.2s;
-        }
-        
+        .mode-btn { padding: 15px; font-size: 20px; border: none; border-radius: 8px; background: #444; color: white; cursor: pointer; transition: 0.2s; }
         .mode-btn.active { background: #2e7d32; box-shadow: 0 0 15px rgba(46,125,50,0.5); }
-        
         #difficulty-selector { margin-top: 20px; text-align: center; }
-        
         .difficulty-buttons { display: flex; gap: 8px; margin-top: 10px; }
-        
-        .diff-btn {
-            padding: 8px 12px; background: #333; color: white;
-            border: 2px solid #555; border-radius: 5px; cursor: pointer;
-        }
-        
+        .diff-btn { padding: 8px 12px; background: #333; color: white; border: 2px solid #555; border-radius: 5px; cursor: pointer; }
         .diff-btn.active { border-color: #ffcc00; background: #555; }
-        
-        .start-btn {
-            padding: 18px 40px; font-size: 24px; background: linear-gradient(45deg, #2e7d32, #4caf50);
-            color: white; border: none; border-radius: 10px; cursor: pointer;
-            margin-top: 30px; font-weight: bold;
-        }
-        
-        .back-btn {
-            position: absolute; top: 20px; left: 20px; padding: 10px 20px;
-            background: #444; color: white; border: none; border-radius: 5px;
-            cursor: pointer; z-index: 1100;
-        }
-        
-        /* Игровые элементы */
-        .score { 
-            position: absolute; width: 100%; text-align: center; 
-            font-size: 24px; font-weight: bold; z-index: 100; 
-            color: #fff; pointer-events: none; text-shadow: 2px 2px #000; 
-        }
-        #score2 { top: 160px; }
-        #score1 { bottom: 160px; }
-        
-        .joy-zone, .btn-fire { 
-            position: fixed; border-radius: 50%; z-index: 200; touch-action: none; 
-        }
-        .joy-zone { width: 150px; height: 150px; background: rgba(255,255,255,0.05); border: 2px solid #555; }
-        .stick { 
-            position: absolute; width: 60px; height: 60px; border-radius: 50%; 
-            top: 45px; left: 45px; pointer-events: none; 
-            background: rgba(255,255,255,0.2); transition: transform 0.05s linear; 
-        }
-        .btn-fire { 
-            display: flex; align-items: center; justify-content: center; 
-            font-weight: bold; width: 120px; height: 120px; border: 4px solid #333; 
-        }
-        
-        #p1-fire { background: rgba(0,255,0,0.2); right: 20px; bottom: 20px; }
-        #p2-fire { background: rgba(255,0,0,0.2); left: 20px; top: 20px; }
+        .start-btn { padding: 18px 40px; font-size: 24px; background: linear-gradient(45deg, #2e7d32, #4caf50); color: white; border: none; border-radius: 10px; cursor: pointer; margin-top: 30px; font-weight: bold; }
+        .back-btn { position: absolute; top: 20px; left: 20px; padding: 10px 20px; background: #444; color: white; border: none; border-radius: 5px; cursor: pointer; z-index: 1100; }
+        .score { position: absolute; width: 100%; text-align: center; font-size: 24px; font-weight: bold; z-index: 100; color: #fff; pointer-events: none; text-shadow: 2px 2px #000; }
+        #score2 { top: 160px; } #score1 { bottom: 160px; }
+        .joy-zone, .btn-fire { position: fixed; border-radius: 50%; z-index: 200; touch-action: none; }
+        .joy-zone { width: 150px; height: 150px; background: rgba(255,255,255,0.1); border: 2px solid #555; }
+        .stick { position: absolute; width: 60px; height: 60px; border-radius: 50%; top: 45px; left: 45px; pointer-events: none; background: rgba(255,255,255,0.3); }
+        .btn-fire { display: flex; align-items: center; justify-content: center; font-weight: bold; width: 120px; height: 120px; border: 4px solid #333; }
+        #p1-fire { background: rgba(0,255,0,0.3); right: 20px; bottom: 20px; }
+        #p2-fire { background: rgba(255,0,0,0.3); left: 20px; top: 20px; }
         #p1-joy { left: 20px; bottom: 20px; }
         #p2-joy { right: 20px; top: 20px; }
-
-        #game-mode-indicator {
-            position: absolute; top: 20px; left: 50%; transform: translateX(-50%);
-            background: rgba(0, 0, 0, 0.7); color: white; padding: 8px 15px;
-            border-radius: 20px; z-index: 300; pointer-events: none;
-        }
-
-        #orientation-warning {
-            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: #000; z-index: 2000; color: white; text-align: center; padding-top: 20%;
-        }
+        #game-mode-indicator { position: absolute; top: 20px; left: 50%; transform: translateX(-50%); background: rgba(0, 0, 0, 0.7); color: white; padding: 8px 15px; border-radius: 20px; z-index: 300; pointer-events: none; }
     </style>
 </head>
 <body>
-    <div id="orientation-warning">Пожалуйста, используйте альбомную ориентацию</div>
-    
     <div id="menu">
         <h1 class="menu-title">БРОНЕТАНКИ</h1>
         <div class="mode-buttons">
@@ -146,258 +66,176 @@
 
 <script>
 const CONFIG = {
-    TANK: { SPEED: 2.8, RADIUS: 20, INITIAL_HP: 3, RECOVERY: 0.003 },
+    TANK: { SPEED: 3, RADIUS: 20, HP: 3 },
     BULLET: { SPEED: 8, RADIUS: 4 },
-    AI: {
-        DIFFICULTY: {
-            easy: { accuracy: 0.3, reaction: 800, dodgeChance: 0.2 },
-            medium: { accuracy: 0.6, reaction: 500, dodgeChance: 0.4 },
-            hard: { accuracy: 0.9, reaction: 250, dodgeChance: 0.7 }
-        }
-    }
+    AI: { DIFFICULTY: { easy: { acc: 0.3, react: 800 }, medium: { acc: 0.6, react: 500 }, hard: { acc: 0.9, react: 250 } } }
 };
 
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
-const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-
-let tanks = [], bullets = [], bricks = [], particles = [], sosTanks = [];
-let gameMode = 'pvp', aiDifficulty = 'medium', isGameActive = false, aiPlayer = null;
+let tanks = [], bullets = [], bricks = [], isGameActive = false, gameMode = 'pvp', aiDifficulty = 'medium', aiLogic = null;
 
 class Tank {
     constructor(id, color, isBottom, isAI = false) {
         this.id = id; this.color = color; this.isBottom = isBottom; this.isAI = isAI;
+        this.score = 0;
         this.reset();
     }
     reset() {
         this.x = canvas.width / 2;
-        this.y = this.isBottom ? canvas.height - 80 : 80;
+        this.y = this.isBottom ? canvas.height - 100 : 100;
         this.angle = this.isBottom ? -Math.PI/2 : Math.PI/2;
-        this.hp = CONFIG.TANK.INITIAL_HP;
-        this.dx = 0; this.dy = 0; this.slow = 1;
-        this.lastShot = 0; this.score = this.score || 0;
-        this.sosBuffer = []; this.lastDown = 0;
+        this.hp = CONFIG.TANK.HP;
+        this.dx = 0; this.dy = 0; this.lastShot = 0;
     }
 }
 
-class AI {
-    constructor(tank, diff) { this.tank = tank; this.config = CONFIG.AI.DIFFICULTY[diff]; this.lastDecision = 0; }
+class AIProcessor {
+    constructor(tank, diff) { this.tank = tank; this.conf = CONFIG.AI.DIFFICULTY[diff]; this.lastAction = 0; }
     update(target) {
         const now = Date.now();
-        if (now - this.lastDecision < this.config.reaction) return;
-        this.lastDecision = now;
-
-        const dist = Math.hypot(target.x - this.tank.x, target.y - this.tank.y);
+        if (now - this.lastAction < this.conf.react) return;
+        this.lastAction = now;
         const angle = Math.atan2(target.y - this.tank.y, target.x - this.tank.x);
-        
         this.tank.angle = angle;
-        if (dist > 200) {
-            this.tank.dx = Math.cos(angle) * 0.6;
-            this.tank.dy = Math.sin(angle) * 0.6;
-        } else {
-            this.tank.dx = 0; this.tank.dy = 0;
-        }
-
-        if (Math.random() < this.config.accuracy && now - this.tank.lastShot > 1000) {
-            shoot(this.tank);
-        }
+        if (Math.hypot(target.x-this.tank.x, target.y-this.tank.y) > 200) {
+            this.tank.dx = Math.cos(angle); this.tank.dy = Math.sin(angle);
+        } else { this.tank.dx = 0; this.tank.dy = 0; }
+        if (Math.random() < this.conf.acc) createBullet(this.tank);
     }
-}
-
-const ControlSystem = {
-    activePointers: new Map(),
-    init() {
-        window.addEventListener('pointerdown', e => this.handlePointer(e));
-        window.addEventListener('pointermove', e => this.handlePointer(e));
-        window.addEventListener('pointerup', e => this.releasePointer(e));
-        window.addEventListener('pointercancel', e => this.releasePointer(e));
-    },
-    handlePointer(e) {
-        if (!isGameActive) return;
-        const p1Joy = document.getElementById('p1-joy').getBoundingClientRect();
-        const p1Fire = document.getElementById('p1-fire').getBoundingClientRect();
-        const p2Joy = document.getElementById('p2-joy').getBoundingClientRect();
-        const p2Fire = document.getElementById('p2-fire').getBoundingClientRect();
-
-        // Player 1
-        this.checkZone(e, p1Joy, (dx, dy) => { updateMove(0, dx, dy); }, 'p1j');
-        this.checkFire(e, p1Fire, 0);
-
-        // Player 2 (только если не PvE)
-        if (gameMode !== 'pve') {
-            this.checkZone(e, p2Joy, (dx, dy) => { updateMove(1, dx, dy); }, 'p2j');
-            this.checkFire(e, p2Fire, 1);
-        }
-    },
-    checkZone(e, rect, callback, id) {
-        if (e.clientX >= rect.left && e.clientX <= rect.right && e.clientY >= rect.top && e.clientY <= rect.bottom) {
-            const dx = (e.clientX - (rect.left + rect.width/2)) / (rect.width/2);
-            const dy = (e.clientY - (rect.top + rect.height/2)) / (rect.height/2);
-            callback(dx, dy);
-            this.activePointers.set(e.pointerId, id);
-        }
-    },
-    checkFire(e, rect, idx) {
-        if (e.type === 'pointerdown' && e.clientX >= rect.left && e.clientX <= rect.right && e.clientY >= rect.top && e.clientY <= rect.bottom) {
-            shoot(tanks[idx]);
-        }
-    },
-    releasePointer(e) {
-        const id = this.activePointers.get(e.pointerId);
-        if (id === 'p1j') updateMove(0, 0, 0);
-        if (id === 'p2j') updateMove(1, 0, 0);
-        this.activePointers.delete(e.pointerId);
-    },
-    clearAll() {
-        this.activePointers.clear();
-        document.querySelectorAll('.stick').forEach(s => s.style.transform = 'translate(0,0)');
-        if (tanks.length) tanks.forEach(t => { t.dx = 0; t.dy = 0; });
-    }
-};
-
-function updateMove(idx, dx, dy) {
-    if (!tanks[idx]) return;
-    const dist = Math.hypot(dx, dy);
-    if (dist > 0.1) {
-        tanks[idx].dx = dx; tanks[idx].dy = dy;
-        tanks[idx].angle = Math.atan2(dy, dx);
-        const stick = document.querySelectorAll('.stick')[idx];
-        if (stick) stick.style.transform = `translate(${dx*30}px, ${dy*30}px)`;
-    } else {
-        tanks[idx].dx = 0; tanks[idx].dy = 0;
-        const stick = document.querySelectorAll('.stick')[idx];
-        if (stick) stick.style.transform = 'translate(0,0)';
-    }
-}
-
-function shoot(tank) {
-    const now = Date.now();
-    if (now - tank.lastShot < 800) return;
-    bullets.push({
-        x: tank.x + Math.cos(tank.angle)*30, y: tank.y + Math.sin(tank.angle)*30,
-        angle: tank.angle, owner: tank.id
-    });
-    tank.lastShot = now;
-}
-
-function startGame() {
-    ControlSystem.clearAll();
-    bullets = []; particles = []; sosTanks = [];
-    
-    document.getElementById('menu').style.display = 'none';
-    document.getElementById('back-to-menu').style.display = 'block';
-    document.getElementById('game-mode-indicator').style.display = 'block';
-    document.getElementById('game-mode-indicator').textContent = gameMode.toUpperCase();
-
-    tanks = [new Tank(0, '#2e7d32', true), new Tank(1, '#c62828', false, gameMode === 'pve')];
-    if (gameMode === 'pve') {
-        aiPlayer = new AI(tanks[1], aiDifficulty);
-        document.getElementById('p2-controls').style.display = 'none';
-    } else {
-        document.getElementById('p2-controls').style.display = 'block';
-    }
-    
-    createBricks();
-    isGameActive = true;
-}
-
-function returnToMenu() {
-    isGameActive = false;
-    document.getElementById('menu').style.display = 'flex';
-    document.getElementById('back-to-menu').style.display = 'none';
-    document.getElementById('game-mode-indicator').style.display = 'none';
-    ControlSystem.clearAll();
 }
 
 function createBricks() {
     bricks = [];
-    const cx = canvas.width/2;
-    const add = (x, y, w, h) => bricks.push({x, y, w: w*25, h: h*15});
-    add(cx-75, canvas.height-180, 6, 1);
-    add(cx-75, 165, 6, 1);
+    const cx = canvas.width / 2;
+    const cy = canvas.height / 2;
+    // Укрытия для игроков
+    bricks.push({x: cx - 100, y: canvas.height - 180, w: 200, h: 20});
+    bricks.push({x: cx - 100, y: 160, w: 200, h: 20});
+    // Центральное препятствие
+    bricks.push({x: cx - 50, y: cy - 50, w: 100, h: 100});
+}
+
+function createBullet(tank) {
+    const now = Date.now();
+    if (now - tank.lastShot < 800) return;
+    bullets.push({ x: tank.x + Math.cos(tank.angle)*30, y: tank.y + Math.sin(tank.angle)*30, angle: tank.angle, owner: tank.id });
+    tank.lastShot = now;
+}
+
+function startGame() {
+    resize();
+    tanks = [new Tank(0, '#2e7d32', true), new Tank(1, '#c62828', false, gameMode === 'pve')];
+    if (gameMode === 'pve') {
+        aiLogic = new AIProcessor(tanks[1], aiDifficulty);
+        document.getElementById('p2-controls').style.display = 'none';
+    } else {
+        document.getElementById('p2-controls').style.display = 'block';
+    }
+    createBricks();
+    isGameActive = true;
+    document.getElementById('menu').style.display = 'none';
+    document.getElementById('back-to-menu').style.display = 'block';
+    document.getElementById('game-mode-indicator').style.display = 'block';
+    document.getElementById('game-mode-indicator').textContent = gameMode.toUpperCase();
 }
 
 function update() {
-    if (!isGameActive) return;
+    if (!isGameActive) { requestAnimationFrame(update); return; }
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    bricks.forEach(b => {
-        ctx.fillStyle = '#a52a2a'; ctx.fillRect(b.x, b.y, b.w, b.h);
-    });
+    // Кирпичи
+    ctx.fillStyle = '#a52a2a';
+    bricks.forEach(b => ctx.fillRect(b.x, b.y, b.w, b.h));
 
+    // Танки
     tanks.forEach(t => {
-        if (t.isAI) aiPlayer.update(tanks[0]);
-        
+        if (t.isAI) aiLogic.update(tanks[0]);
         let nx = t.x + t.dx * CONFIG.TANK.SPEED;
         let ny = t.y + t.dy * CONFIG.TANK.SPEED;
-
         const col = bricks.some(b => nx+20 > b.x && nx-20 < b.x+b.w && ny+20 > b.y && ny-20 < b.y+b.h);
-        if (!col && nx > 20 && nx < canvas.width-20 && ny > 20 && ny < canvas.height-20) {
-            t.x = nx; t.y = ny;
-        }
-
-        ctx.save();
-        ctx.translate(t.x, t.y); ctx.rotate(t.angle);
-        ctx.fillStyle = t.color; ctx.fillRect(-18, -12, 36, 24);
-        ctx.fillStyle = '#222'; ctx.fillRect(10, -3, 20, 6);
+        if (!col && nx > 20 && nx < canvas.width-20 && ny > 20 && ny < canvas.height-20) { t.x = nx; t.y = ny; }
+        
+        ctx.save(); ctx.translate(t.x, t.y); ctx.rotate(t.angle);
+        ctx.fillStyle = t.color; ctx.fillRect(-20, -15, 40, 30);
+        ctx.fillStyle = '#111'; ctx.fillRect(15, -4, 20, 8);
         ctx.restore();
     });
 
+    // Пули
     for (let i = bullets.length-1; i >= 0; i--) {
         let b = bullets[i];
         b.x += Math.cos(b.angle) * CONFIG.BULLET.SPEED;
         b.y += Math.sin(b.angle) * CONFIG.BULLET.SPEED;
-
         ctx.fillStyle = 'yellow'; ctx.beginPath(); ctx.arc(b.x, b.y, 4, 0, Math.PI*2); ctx.fill();
 
         tanks.forEach(t => {
             if (b.owner !== t.id && Math.hypot(b.x-t.x, b.y-t.y) < 25) {
-                t.hp--; bullets.splice(i, 1);
-                if (t.hp <= 0) {
-                    tanks[b.owner].score++;
-                    document.getElementById('score1').textContent = tanks[0].score;
-                    document.getElementById('score2').textContent = tanks[1].score;
-                    t.reset();
-                }
+                bullets.splice(i, 1); t.hp--;
+                if (t.hp <= 0) { tanks[b.owner].score++; t.reset(); }
+                document.getElementById('score1').textContent = tanks[0].score;
+                document.getElementById('score2').textContent = tanks[1].score;
             }
         });
-
         if (b && (b.x < 0 || b.x > canvas.width || b.y < 0 || b.y > canvas.height)) bullets.splice(i, 1);
     }
-
     requestAnimationFrame(update);
 }
 
-// Слушатели меню
-document.querySelectorAll('.mode-btn').forEach(btn => {
-    btn.onclick = () => {
-        document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        gameMode = btn.dataset.mode;
-        document.getElementById('difficulty-selector').style.display = gameMode === 'pve' ? 'block' : 'none';
-    };
+// Управление
+const handleInput = (e) => {
+    if (!isGameActive) return;
+    const touches = e.changedTouches || [e];
+    for (let t of touches) {
+        const check = (id) => document.getElementById(id).getBoundingClientRect();
+        const p1j = check('p1-joy'), p1f = check('p1-fire'), p2j = check('p2-joy'), p2f = check('p2-fire');
+        
+        const inR = (r, x, y) => x > r.left && x < r.right && y > r.top && y < r.bottom;
+        
+        if (inR(p1j, t.clientX, t.clientY)) {
+            const dx = (t.clientX - (p1j.left + 75))/75, dy = (t.clientY - (p1j.top + 75))/75;
+            tanks[0].dx = dx; tanks[0].dy = dy; tanks[0].angle = Math.atan2(dy, dx);
+            document.querySelector('#p1-joy .stick').style.transform = `translate(${dx*35}px,${dy*35}px)`;
+        }
+        if (inR(p1f, t.clientX, t.clientY) && e.type.includes('down')) createBullet(tanks[0]);
+        
+        if (gameMode !== 'pve') {
+            if (inR(p2j, t.clientX, t.clientY)) {
+                const dx = (t.clientX - (p2j.left + 75))/75, dy = (t.clientY - (p2j.top + 75))/75;
+                tanks[1].dx = dx; tanks[1].dy = dy; tanks[1].angle = Math.atan2(dy, dx);
+                document.querySelector('#p2-joy .stick').style.transform = `translate(${dx*35}px,${dy*35}px)`;
+            }
+            if (inR(p2f, t.clientX, t.clientY) && e.type.includes('down')) createBullet(tanks[1]);
+        }
+    }
+};
+
+const stopInput = (e) => {
+    tanks.forEach((t, i) => { t.dx = 0; t.dy = 0; document.querySelectorAll('.stick')[i].style.transform = 'none'; });
+};
+
+window.addEventListener('touchstart', handleInput); window.addEventListener('touchmove', handleInput);
+window.addEventListener('touchend', stopInput); window.addEventListener('mousedown', handleInput);
+window.addEventListener('mouseup', stopInput);
+
+document.querySelectorAll('.mode-btn').forEach(b => b.onclick = () => {
+    document.querySelectorAll('.mode-btn').forEach(a => a.classList.remove('active'));
+    b.classList.add('active'); gameMode = b.dataset.mode;
+    document.getElementById('difficulty-selector').style.display = gameMode === 'pve' ? 'block' : 'none';
 });
 
-document.querySelectorAll('.diff-btn').forEach(btn => {
-    btn.onclick = () => {
-        document.querySelectorAll('.diff-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        aiDifficulty = btn.dataset.diff;
-    };
+document.querySelectorAll('.diff-btn').forEach(b => b.onclick = () => {
+    document.querySelectorAll('.diff-btn').forEach(a => a.classList.remove('active'));
+    b.classList.add('active'); aiDifficulty = b.dataset.diff;
 });
 
 document.getElementById('start-game').onclick = startGame;
-document.getElementById('back-to-menu').onclick = returnToMenu;
+document.getElementById('back-to-menu').onclick = () => { isGameActive = false; document.getElementById('menu').style.display = 'flex'; };
 
-window.onresize = () => {
-    canvas.width = window.innerWidth; canvas.height = window.innerHeight;
-};
-
-window.onload = () => {
-    window.onresize();
-    ControlSystem.init();
-    update();
-};
+function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+window.onresize = resize;
+resize();
+update();
 </script>
 </body>
 </html>
