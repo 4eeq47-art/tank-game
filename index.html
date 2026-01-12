@@ -379,7 +379,7 @@
         Левая сторона: Зеленый танк • Правая сторона: Красный танк
     </div>
     
-    <!-- Управление игроком 1 (слева, зеленый) -->
+    <!-- Управление игроком 1 (слева, зеленый) - ОГНЬ ВНИЗУ, ДЖОЙСТИК ВВЕРХУ -->
     <div id="p1-controls">
         <div id="p1-fire" class="btn-fire" style="left: 20px; bottom: 20px;">
             <span class="fire-text">ОГОНЬ</span>
@@ -389,7 +389,7 @@
         </div>
     </div>
     
-    <!-- Управление игроком 2 (справа, красный) -->
+    <!-- Управление игроком 2 (справа, красный) - ОГНЬ ВНИЗУ, ДЖОЙСТИК ВВЕРХУ -->
     <div id="p2-controls">
         <div id="p2-fire" class="btn-fire" style="right: 20px; bottom: 20px;">
             <span class="fire-text">ОГОНЬ</span>
@@ -487,12 +487,12 @@ let sosTanks = [];
 let bricks = [];
 let tanks = [];
 let gameMode = 'pvp';
-let aiDifficulty = 'insane'; // По умолчанию
+let aiDifficulty = 'insane';
 let aiPlayer = null;
 let lastAIUpdate = 0;
 let isGameActive = false;
 let isLandscapeMode = false;
-let selectedMode = 'pvp'; // Режим, выбранный в меню
+let selectedMode = 'pvp';
 
 // ========== КЛАСС ТАНКА ==========
 class Tank {
@@ -537,7 +537,6 @@ class AI {
         this.patrolPoints = [];
         this.waypointIndex = 0;
         
-        // Устанавливаем перезарядку в зависимости от сложности
         this.tank.shootCooldown = this.config.shootCooldown;
     }
     
@@ -770,7 +769,7 @@ diffButtons.forEach(btn => {
 // Подтверждение выбора сложности
 confirmDifficultyBtn.addEventListener('click', () => {
     difficultyModal.style.display = 'none';
-    gameMode = 'pve'; // Устанавливаем режим PvE
+    gameMode = 'pve';
     startActualGame();
 });
 
@@ -779,14 +778,11 @@ startBtn.addEventListener('click', () => {
     if (isLandscapeMode) return;
     
     if (selectedMode === 'pve') {
-        // Для режима PvE показываем модальное окно выбора сложности
         difficultyModal.style.display = 'flex';
     } else if (selectedMode === 'pvp') {
-        // Для PvP сразу начинаем игру
         gameMode = 'pvp';
         startActualGame();
     } else if (selectedMode === 'survival') {
-        // Для режима выживания показываем сообщение
         alert('Режим "Выживание" находится в разработке. Выберите другой режим.');
     }
 });
@@ -801,40 +797,7 @@ backBtn.addEventListener('click', () => {
     returnToMenu();
 });
 
-// ========== ФУНКЦИИ ЗАПУСКА ИГРЫ ==========
-function startActualGame() {
-    menu.style.display = 'none';
-    gameModeIndicator.style.display = 'block';
-    backBtn.style.display = 'block';
-    controlsHint.style.display = 'block';
-    
-    if (gameMode === 'pve') {
-        p2Controls.style.display = 'none';
-    } else {
-        p2Controls.style.display = 'block';
-    }
-    
-    initGame();
-    isGameActive = true;
-}
-
-function returnToMenu() {
-    menu.style.display = 'flex';
-    gameModeIndicator.style.display = 'none';
-    backBtn.style.display = 'none';
-    controlsHint.style.display = 'none';
-    
-    isGameActive = false;
-    bullets = [];
-    particles = [];
-    sosTanks = [];
-    
-    controlSystem.clearAll();
-    
-    p2Controls.style.display = 'block';
-}
-
-// ========== СИСТЕМА УПРАВЛЕНИЯ ==========
+// ========== СИСТЕМА УПРАВЛЕНИЯ (ИСПРАВЛЕННАЯ) ==========
 class ControlSystem {
     constructor() {
         this.joyActivePointers = new Map();
@@ -845,56 +808,57 @@ class ControlSystem {
         const joy = document.getElementById(joyId);
         const fire = document.getElementById(fireId);
         
-        // Создаем клоны для сброса старых обработчиков
-        const joyClone = joy.cloneNode(true);
-        const fireClone = fire.cloneNode(true);
-        
-        joy.parentNode.replaceChild(joyClone, joy);
-        fire.parentNode.replaceChild(fireClone, fire);
-        
-        const newJoy = document.getElementById(joyId);
-        const newFire = document.getElementById(fireId);
-        const newStick = newJoy.querySelector('.stick');
+        // Получаем стик
+        const stick = joy.querySelector('.stick');
         
         const tank = tanks[playerIndex];
         const playerType = playerIndex === 0 ? 'p1' : 'p2';
         
+        // Очищаем старые обработчики
+        joy.onpointerdown = null;
+        joy.onpointermove = null;
+        joy.onpointerup = null;
+        joy.onpointercancel = null;
+        fire.onpointerdown = null;
+        fire.onpointerup = null;
+        fire.onpointercancel = null;
+        
         // Джойстик
-        newJoy.addEventListener('pointerdown', (e) => {
+        joy.addEventListener('pointerdown', (e) => {
             e.preventDefault();
             if (audioCtx.state === 'suspended') audioCtx.resume();
             
             const pointerId = e.pointerId;
             this.joyActivePointers.set(pointerId, playerType);
-            newJoy.setPointerCapture(pointerId);
-            this.handleJoyMove(e, newJoy, newStick, tank);
+            joy.setPointerCapture(pointerId);
+            this.handleJoyMove(e, joy, stick, tank);
         });
         
-        newJoy.addEventListener('pointermove', (e) => {
+        joy.addEventListener('pointermove', (e) => {
             e.preventDefault();
             if (this.joyActivePointers.has(e.pointerId)) {
-                this.handleJoyMove(e, newJoy, newStick, tank);
+                this.handleJoyMove(e, joy, stick, tank);
             }
         });
         
-        newJoy.addEventListener('pointerup', (e) => {
+        joy.addEventListener('pointerup', (e) => {
             e.preventDefault();
             const pointerId = e.pointerId;
             
             if (this.joyActivePointers.get(pointerId) === playerType) {
-                newStick.style.transform = '';
+                stick.style.transform = '';
                 tank.dx = 0;
                 tank.dy = 0;
                 this.joyActivePointers.delete(pointerId);
             }
         });
         
-        newJoy.addEventListener('pointercancel', (e) => {
+        joy.addEventListener('pointercancel', (e) => {
             e.preventDefault();
             const pointerId = e.pointerId;
             
             if (this.joyActivePointers.get(pointerId) === playerType) {
-                newStick.style.transform = '';
+                stick.style.transform = '';
                 tank.dx = 0;
                 tank.dy = 0;
                 this.joyActivePointers.delete(pointerId);
@@ -902,13 +866,13 @@ class ControlSystem {
         });
         
         // Кнопка огня
-        newFire.addEventListener('pointerdown', (e) => {
+        fire.addEventListener('pointerdown', (e) => {
             e.preventDefault();
             if (audioCtx.state === 'suspended') audioCtx.resume();
             
             const pointerId = e.pointerId;
             this.fireActivePointers.set(pointerId, playerType);
-            newFire.style.backgroundColor = 'rgba(255,255,255,0.3)';
+            fire.style.backgroundColor = 'rgba(255,255,255,0.3)';
             
             handleSOS(playerIndex, true);
             
@@ -928,29 +892,29 @@ class ControlSystem {
             }
         });
         
-        newFire.addEventListener('pointerup', (e) => {
+        fire.addEventListener('pointerup', (e) => {
             e.preventDefault();
             const pointerId = e.pointerId;
             
             if (this.fireActivePointers.get(pointerId) === playerType) {
-                newFire.style.backgroundColor = '';
+                fire.style.backgroundColor = '';
                 handleSOS(playerIndex, false);
                 this.fireActivePointers.delete(pointerId);
             }
         });
         
-        newFire.addEventListener('pointercancel', (e) => {
+        fire.addEventListener('pointercancel', (e) => {
             e.preventDefault();
             const pointerId = e.pointerId;
             
             if (this.fireActivePointers.get(pointerId) === playerType) {
-                newFire.style.backgroundColor = '';
+                fire.style.backgroundColor = '';
                 this.fireActivePointers.delete(pointerId);
             }
         });
         
-        newJoy.addEventListener('contextmenu', e => e.preventDefault());
-        newFire.addEventListener('contextmenu', e => e.preventDefault());
+        joy.addEventListener('contextmenu', e => e.preventDefault());
+        fire.addEventListener('contextmenu', e => e.preventDefault());
     }
     
     handleJoyMove(e, joy, stick, tank) {
@@ -1000,6 +964,39 @@ class ControlSystem {
 }
 
 const controlSystem = new ControlSystem();
+
+// ========== ФУНКЦИИ ЗАПУСКА ИГРЫ ==========
+function startActualGame() {
+    menu.style.display = 'none';
+    gameModeIndicator.style.display = 'block';
+    backBtn.style.display = 'block';
+    controlsHint.style.display = 'block';
+    
+    if (gameMode === 'pve') {
+        p2Controls.style.display = 'none';
+    } else {
+        p2Controls.style.display = 'block';
+    }
+    
+    initGame();
+    isGameActive = true;
+}
+
+function returnToMenu() {
+    menu.style.display = 'flex';
+    gameModeIndicator.style.display = 'none';
+    backBtn.style.display = 'none';
+    controlsHint.style.display = 'none';
+    
+    isGameActive = false;
+    bullets = [];
+    particles = [];
+    sosTanks = [];
+    
+    controlSystem.clearAll();
+    
+    p2Controls.style.display = 'block';
+}
 
 // ========== ИНИЦИАЛИЗАЦИЯ ИГРЫ ==========
 function initGame() {
@@ -1086,46 +1083,45 @@ function createBricks() {
     const centerX = canvas.width / 2;
     const centerY = canvas.height / 2;
     
+    // Центральные укрытия
     addBrickWall(centerX - 50, centerY - 60, 4, 2);
     addBrickWall(centerX - 50, centerY + 40, 4, 2);
-    addBrickWall(80, centerY - 30, 2, 3);
-    addBrickWall(canvas.width - 130, centerY - 30, 2, 3);
+    
+    // Боковые укрытия
+    addBrickWall(80, centerY - 30, 2, 3); // Слева
+    addBrickWall(canvas.width - 130, centerY - 30, 2, 3); // Справа
 }
 
-// ========== ОТРИСОВКА ==========
-function drawBrick(brick) {
-    ctx.fillStyle = CONFIG.BRICK.COLOR;
-    ctx.fillRect(brick.x, brick.y, brick.w, brick.h);
-    
-    ctx.strokeStyle = CONFIG.BRICK.BORDER_COLOR;
-    ctx.strokeRect(brick.x, brick.y, brick.w, brick.h);
-    
-    ctx.fillStyle = 'rgba(0,0,0,0.2)';
-    ctx.fillRect(brick.x + brick.w - 6, brick.y + 2, 4, brick.h - 4);
-}
-
+// ========== ОТРИСОВКА ТАНКОВ (ИСПРАВЛЕНА) ==========
 function drawTank(tank, isSOSTank = false) {
+    if (!tank) return;
+    
     ctx.save();
     ctx.translate(tank.x, tank.y);
     ctx.rotate(tank.angle);
     
+    // Гусеницы
     ctx.fillStyle = '#111';
     ctx.fillRect(-18, -15, 36, 6);
     ctx.fillRect(-18, 9, 36, 6);
     
+    // Корпус
     ctx.fillStyle = tank.color;
     ctx.beginPath();
     ctx.roundRect(-15, -10, 30, 20, 3);
     ctx.fill();
     
+    // Центральная точка
     ctx.beginPath();
     ctx.arc(-2, 0, 8, 0, Math.PI * 2);
     ctx.fill();
     ctx.stroke();
     
+    // Дуло
     ctx.fillStyle = (tank.slow < 1 && !isSOSTank) ? '#00fbff' : '#222';
     ctx.fillRect(6, -2, 18, 4);
     
+    // Индикатор ИИ
     if (tank.isAI && !isSOSTank) {
         ctx.fillStyle = '#ffcc00';
         ctx.font = '10px Arial';
@@ -1135,6 +1131,7 @@ function drawTank(tank, isSOSTank = false) {
     
     ctx.restore();
     
+    // Полоска здоровья
     if (!isSOSTank && tank.isAlive) {
         const healthBarWidth = 35;
         const healthBarHeight = 5;
@@ -1153,8 +1150,21 @@ function drawTank(tank, isSOSTank = false) {
     }
 }
 
+function drawBrick(brick) {
+    ctx.fillStyle = CONFIG.BRICK.COLOR;
+    ctx.fillRect(brick.x, brick.y, brick.w, brick.h);
+    
+    ctx.strokeStyle = CONFIG.BRICK.BORDER_COLOR;
+    ctx.strokeRect(brick.x, brick.y, brick.w, brick.h);
+    
+    ctx.fillStyle = 'rgba(0,0,0,0.2)';
+    ctx.fillRect(brick.x + brick.w - 6, brick.y + 2, 4, brick.h - 4);
+}
+
 // ========== ОБНОВЛЕНИЕ ИГРЫ ==========
 function updateTanks() {
+    if (!tanks || tanks.length === 0) return;
+    
     tanks.forEach(tank => {
         if (!tank.isAlive) return;
         
@@ -1190,7 +1200,7 @@ function updateTanks() {
 }
 
 function updateAI() {
-    if (gameMode !== 'pve' || !aiPlayer || !tanks[1] || !tanks[0]) return;
+    if (gameMode !== 'pve' || !aiPlayer || !tanks || tanks.length < 2 || !tanks[1] || !tanks[0]) return;
     
     const now = Date.now();
     if (now - lastAIUpdate > CONFIG.AI.UPDATE_INTERVAL) {
@@ -1206,7 +1216,10 @@ function updateAI() {
 function updateSOSTanks() {
     for (let i = sosTanks.length - 1; i >= 0; i--) {
         const sosTank = sosTanks[i];
+        if (!tanks || tanks.length < 2) continue;
+        
         const target = tanks[1 - sosTank.owner];
+        if (!target) continue;
         
         const distance = Math.hypot(target.x - sosTank.x, target.y - sosTank.y);
         
@@ -1275,7 +1288,7 @@ function updateBullets() {
         let hitTank = false;
         
         for (const tank of tanks) {
-            if (bullet.owner === tank.id || !tank.isAlive) continue;
+            if (!tank || bullet.owner === tank.id || !tank.isAlive) continue;
             
             const distance = Math.hypot(bullet.x - tank.x, bullet.y - tank.y);
             
@@ -1291,8 +1304,10 @@ function updateBullets() {
                 
                 if (tank.hp <= 0) {
                     if (!bullet.isFromSOS) {
-                        tanks[bullet.owner].score++;
-                        updateScoreDisplay();
+                        if (tanks[bullet.owner]) {
+                            tanks[bullet.owner].score++;
+                            updateScoreDisplay();
+                        }
                     }
                     
                     createExplosion(tank.x, tank.y);
@@ -1353,12 +1368,16 @@ function createExplosion(x, y) {
 }
 
 function updateScoreDisplay() {
-    document.getElementById('score1').textContent = tanks[0].score;
-    document.getElementById('score2').textContent = tanks[1].score;
+    if (tanks && tanks.length > 0) {
+        document.getElementById('score1').textContent = tanks[0] ? tanks[0].score : 0;
+        document.getElementById('score2').textContent = tanks[1] ? tanks[1].score : 0;
+    }
 }
 
 // ========== ОБРАБОТКА SOS ==========
 function handleSOS(playerIndex, isDown) {
+    if (!tanks || !tanks[playerIndex]) return;
+    
     const tank = tanks[playerIndex];
     const now = Date.now();
     
@@ -1390,6 +1409,8 @@ function handleSOS(playerIndex, isDown) {
 }
 
 function spawnSOS(playerIndex) {
+    if (!tanks || !tanks[playerIndex]) return;
+    
     const sides = [
         { x: canvas.width / 2, y: -60 },
         { x: canvas.width / 2, y: canvas.height + 60 },
@@ -1415,7 +1436,7 @@ function resizeCanvas() {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
     
-    if (tanks.length > 0) {
+    if (tanks && tanks.length > 0) {
         tanks.forEach(tank => {
             tank.x = tank.isLeftPlayer ? 100 : canvas.width - 100;
             tank.y = canvas.height / 2;
@@ -1430,8 +1451,10 @@ function gameLoop() {
     
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     
+    // Отрисовываем кирпичи
     bricks.forEach(drawBrick);
     
+    // Обновляем игровые объекты
     updateTanks();
     updateAI();
     updateSOSTanks();
