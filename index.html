@@ -2,34 +2,34 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Tanks: Armored Bricks</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>БРОНЕТАНКИ: ULTRA</title>
     <style>
-        body { margin: 0; padding: 0; background: #222; overflow: hidden; touch-action: none; font-family: 'Arial', sans-serif; -webkit-user-select: none; user-select: none; }
-        canvas { display: block; background: #333; width: 100vw; height: 100vh; }
-        #menu { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.9); z-index: 1000; display: flex; flex-direction: column; justify-content: center; align-items: center; color: white; }
-        .menu-title { font-size: 48px; margin-bottom: 40px; color: #ffcc00; }
-        .mode-btn { padding: 15px; font-size: 20px; border: none; border-radius: 8px; background: #444; color: white; cursor: pointer; margin-bottom: 10px; width: 280px; }
-        .mode-btn.active { background: #2e7d32; }
-        .start-btn { padding: 18px 40px; font-size: 24px; background: linear-gradient(45deg, #2e7d32, #4caf50); color: white; border: none; border-radius: 10px; cursor: pointer; margin-top: 20px; font-weight: bold; }
-        .score { position: absolute; width: 100%; text-align: center; font-size: 24px; font-weight: bold; z-index: 100; color: #fff; pointer-events: none; }
-        #score2 { top: 160px; } #score1 { bottom: 160px; }
+        body { margin: 0; padding: 0; background: #1a1a1a; overflow: hidden; touch-action: none; font-family: 'Segoe UI', Arial, sans-serif; -webkit-user-select: none; user-select: none; }
+        canvas { display: block; background: #2c2c2c; }
+        #menu { position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 1000; display: flex; flex-direction: column; justify-content: center; align-items: center; color: white; }
+        .menu-title { font-size: clamp(32px, 8vw, 64px); margin-bottom: 30px; color: #ffcc00; text-shadow: 0 0 20px rgba(255,204,0,0.4); }
+        .mode-btn { padding: 18px; font-size: 22px; border: 2px solid #444; border-radius: 12px; background: #333; color: white; cursor: pointer; margin-bottom: 12px; width: min(320px, 80vw); transition: 0.3s; }
+        .mode-btn.active { background: #2e7d32; border-color: #4caf50; transform: scale(1.05); }
+        .start-btn { padding: 20px 50px; font-size: 28px; background: linear-gradient(to bottom, #4caf50, #2e7d32); color: white; border: none; border-radius: 15px; cursor: pointer; margin-top: 25px; font-weight: bold; box-shadow: 0 5px 15px rgba(0,0,0,0.5); }
+        .score { position: absolute; width: 100%; text-align: center; font-size: 32px; font-weight: 900; z-index: 100; color: #fff; pointer-events: none; text-shadow: 3px 3px 5px #000; }
+        #score2 { top: 180px; } #score1 { bottom: 180px; }
         .joy-zone, .btn-fire { position: fixed; border-radius: 50%; z-index: 200; touch-action: none; }
-        .joy-zone { width: 150px; height: 150px; background: rgba(255,255,255,0.05); border: 2px solid #555; }
-        .stick { position: absolute; width: 60px; height: 60px; border-radius: 50%; top: 45px; left: 45px; pointer-events: none; background: rgba(255,255,255,0.2); }
-        .btn-fire { display: flex; align-items: center; justify-content: center; font-weight: bold; width: 120px; height: 120px; border: 4px solid #333; }
-        #p1-fire { background: rgba(0,255,0,0.2); right: 20px; bottom: 20px; }
-        #p2-fire { background: rgba(255,0,0,0.2); left: 20px; top: 20px; }
-        #p1-joy { left: 20px; bottom: 20px; }
-        #p2-joy { right: 20px; top: 20px; }
+        .joy-zone { width: 160px; height: 160px; background: rgba(255,255,255,0.03); border: 2px solid rgba(255,255,255,0.2); }
+        .stick { position: absolute; width: 70px; height: 70px; border-radius: 50%; top: 45px; left: 45px; pointer-events: none; background: rgba(255,255,255,0.15); box-shadow: inset 0 0 10px rgba(255,255,255,0.5); }
+        .btn-fire { display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 800; width: 130px; height: 130px; border: 5px solid rgba(0,0,0,0.3); box-shadow: 0 0 20px rgba(0,0,0,0.2); }
+        #p1-fire { background: radial-gradient(circle, rgba(76,175,80,0.4), rgba(46,125,50,0.6)); right: 30px; bottom: 30px; }
+        #p2-fire { background: radial-gradient(circle, rgba(244,67,54,0.4), rgba(198,40,40,0.6)); left: 30px; top: 30px; }
+        #p1-joy { left: 30px; bottom: 30px; }
+        #p2-joy { right: 30px; top: 30px; }
     </style>
 </head>
 <body>
     <div id="menu">
         <h1 class="menu-title">БРОНЕТАНКИ</h1>
-        <button class="mode-btn active" data-mode="pvp">1 на 1 (PvP)</button>
-        <button class="mode-btn" data-mode="pve">Против ИИ (PvE)</button>
-        <button class="start-btn" id="start-game">НАЧАТЬ ИГРУ</button>
+        <button class="mode-btn active" data-mode="pvp">ИГРОК VS ИГРОК</button>
+        <button class="mode-btn" data-mode="pve">ИГРОК VS БОТ</button>
+        <button class="start-btn" id="start-game">В БОЙ!</button>
     </div>
 
     <div id="score2" class="score">0</div>
@@ -47,161 +47,239 @@
 
 <script>
 const CONFIG = {
-    TANK: { SPEED: 2.8, HP: 3, COOLDOWN: 400 }, // Огонь стал быстрее
-    BULLET: { SPEED: 9 },
-    SOS: { SEQ: '...---...', TANK_LIFE: 500 }
+    TANK: { SPEED: 3.2, HP: 3, COOLDOWN: 350, RADIUS: 22 },
+    BULLET: { SPEED: 10, RADIUS: 5 },
+    AI: { UPDATE: 100 },
+    SOS: { SEQ: '...---...', DURATION: 8000 }
 };
 
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
-let tanks = [], bullets = [], bricks = [], sosTanks = [], isGameActive = false, gameMode = 'pvp';
+let tanks = [], bullets = [], bricks = [], particles = [], sosSquad = [], isGameActive = false, gameMode = 'pvp';
 
 class Tank {
-    constructor(id, color, isBottom) {
-        this.id = id; this.color = color; this.isBottom = isBottom;
+    constructor(id, color, isBottom, isAI = false) {
+        this.id = id; this.color = color; this.isBottom = isBottom; this.isAI = isAI;
         this.score = 0; this.reset();
     }
     reset() {
         this.x = canvas.width / 2;
-        this.y = this.isBottom ? canvas.height - 80 : 80;
+        this.y = this.isBottom ? canvas.height - 100 : 100;
         this.angle = this.isBottom ? -Math.PI/2 : Math.PI/2;
         this.hp = CONFIG.TANK.HP;
         this.dx = 0; this.dy = 0; this.lastShot = 0;
+        this.hitFlash = 0; this.isDestroyed = false;
         this.sosBuffer = []; this.lastDown = 0;
-        this.isAtBase = true; // Для положения полоски жизни
+        this.isAtBase = true;
     }
+}
+
+class Particle {
+    constructor(x, y, color, speed, type = 'spark') {
+        this.x = x; this.y = y; this.color = color;
+        this.vx = (Math.random()-0.5) * speed;
+        this.vy = (Math.random()-0.5) * speed;
+        this.life = 1.0; this.type = type;
+    }
+    update() { this.x += this.vx; this.y += this.vy; this.life -= 0.02; }
 }
 
 function createBricks() {
     bricks = [];
     const cx = canvas.width / 2;
     const addWall = (x, y, w, h) => {
-        for(let i=0; i<w; i++) for(let j=0; j<h; j++) bricks.push({x: x+i*25, y: y+j*15, w: 25, h: 15});
+        for(let i=0; i<w; i++) for(let j=0; j<h; j++) bricks.push({x: x+i*26, y: y+j*16, w: 25, h: 15});
     };
-    // П-образные укрытия
-    addWall(cx - 75, canvas.height - 180, 6, 1); addWall(cx - 75, canvas.height - 165, 1, 3); addWall(cx + 50, canvas.height - 165, 1, 3);
-    addWall(cx - 75, 165, 6, 1); addWall(cx - 75, 105, 1, 4); addWall(cx + 50, 105, 1, 4);
+    // П-образные базы
+    addWall(cx - 78, canvas.height - 180, 6, 1); addWall(cx - 78, canvas.height - 164, 1, 3); addWall(cx + 52, canvas.height - 164, 1, 3);
+    addWall(cx - 78, 165, 6, 1); addWall(cx - 78, 117, 1, 3); addWall(cx + 52, 117, 1, 3);
 }
 
-function drawTank(t, isSOS = false) {
+function drawTank(t) {
+    if (t.isDestroyed) {
+        if (Math.random() > 0.5) particles.push(new Particle(t.x, t.y, '#ff4400', 5, 'fire'));
+        return;
+    }
     ctx.save();
     ctx.translate(t.x, t.y);
+    if (t.hitFlash > 0) { ctx.scale(1.1, 1.1); t.hitFlash--; ctx.globalAlpha = 0.5; }
     ctx.rotate(t.angle);
+    
     // Гусеницы
-    ctx.fillStyle = '#111'; ctx.fillRect(-22, -18, 44, 8); ctx.fillRect(-22, 10, 44, 8);
+    ctx.fillStyle = '#111';
+    ctx.fillRect(-24, -20, 48, 10); ctx.fillRect(-24, 10, 48, 10);
+    
     // Корпус
-    ctx.fillStyle = t.color; ctx.beginPath(); ctx.roundRect(-18, -12, 36, 24, 3); ctx.fill();
+    ctx.fillStyle = t.color;
+    ctx.beginPath(); ctx.roundRect(-20, -15, 40, 30, 4); ctx.fill();
+    ctx.strokeStyle = 'rgba(0,0,0,0.3)'; ctx.stroke();
+    
     // Башня
-    ctx.beginPath(); ctx.arc(-2, 0, 10, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
-    // Дуло
-    ctx.fillStyle = '#222'; ctx.fillRect(8, -3, 22, 6);
+    ctx.beginPath(); ctx.arc(-2, 0, 12, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+    
+    // Ствол
+    ctx.fillStyle = '#222'; ctx.fillRect(10, -4, 25, 8);
     ctx.restore();
 
-    if (!isSOS) {
-        // Полоска жизни
-        const offset = t.isAtBase ? 35 : -35; 
-        const bx = t.x - 20;
-        const by = t.y + (Math.sin(t.angle) * offset) - 30;
-        ctx.fillStyle = 'black'; ctx.fillRect(t.x-20, t.y + (t.isAtBase ? 35 : -45), 40, 6);
-        ctx.fillStyle = t.hp > 1 ? '#0f0' : '#f00'; ctx.fillRect(t.x-20, t.y + (t.isAtBase ? 35 : -45), (t.hp/CONFIG.TANK.HP)*40, 6);
+    // Жизни
+    const barPos = t.isAtBase ? 45 : -55;
+    ctx.fillStyle = 'rgba(0,0,0,0.5)'; ctx.fillRect(t.x-25, t.y+barPos, 50, 8);
+    ctx.fillStyle = t.hp > 1 ? '#4caf50' : '#f44336';
+    ctx.fillRect(t.x-25, t.y+barPos, (t.hp/CONFIG.TANK.HP)*50, 8);
+}
+
+function updateAI(bot, target) {
+    const dist = Math.hypot(target.x - bot.x, target.y - bot.y);
+    const angleToTarget = Math.atan2(target.y - bot.y, target.x - bot.x);
+    bot.angle = angleToTarget;
+    if (dist > 250) {
+        bot.dx = Math.cos(angleToTarget); bot.dy = Math.sin(angleToTarget);
+    } else {
+        bot.dx = 0; bot.dy = 0;
+        if (Math.random() < 0.05) shoot(bot);
     }
+}
+
+function checkCollision(obj, isTank = true) {
+    const r = isTank ? CONFIG.TANK.RADIUS : 5;
+    // Границы экрана
+    if (obj.x < r || obj.x > canvas.width - r || obj.y < r || obj.y > canvas.height - r) return true;
+    // Стены
+    for (let b of bricks) {
+        if (obj.x + r > b.x && obj.x - r < b.x + b.w && obj.y + r > b.y && obj.y - r < b.y + b.h) return true;
+    }
+    // Другие танки
+    if (isTank) {
+        for (let t of tanks) {
+            if (t !== obj && !t.isDestroyed && Math.hypot(obj.x - t.x, obj.y - t.y) < r * 2) return true;
+        }
+    }
+    return false;
 }
 
 function shoot(t) {
     const now = Date.now();
-    if (now - t.lastShot < CONFIG.TANK.COOLDOWN) return;
+    if (now - t.lastShot < CONFIG.TANK.COOLDOWN || t.isDestroyed) return;
     bullets.push({ x: t.x + Math.cos(t.angle)*35, y: t.y + Math.sin(t.angle)*35, angle: t.angle, owner: t.id });
-    t.lastShot = now;
-    t.isAtBase = false;
+    t.lastShot = now; t.isAtBase = false;
 }
 
-function handleSOS(idx, type) {
-    const t = tanks[idx];
-    if (type === 'down') t.lastDown = Date.now();
-    else {
-        const dur = Date.now() - t.lastDown;
-        t.sosBuffer.push(dur < 250 ? '.' : '-');
-        if (t.sosBuffer.length > 9) t.sosBuffer.shift();
-        if (t.sosBuffer.join('').includes(CONFIG.SOS.SEQ)) {
-            for(let i=0; i<5; i++) sosTanks.push({x: Math.random()*canvas.width, y: t.isBottom?canvas.height:0, angle: t.angle, color: t.color, owner: t.id, life: CONFIG.SOS.TANK_LIFE});
-            t.sosBuffer = [];
-        }
+function triggerSOS(ownerIdx) {
+    const owner = tanks[ownerIdx];
+    const enemy = tanks[ownerIdx === 0 ? 1 : 0];
+    for (let i = 0; i < 8; i++) {
+        const angle = (Math.PI * 2 / 8) * i;
+        const helper = new Tank(99, owner.color, false, true);
+        helper.x = owner.x + Math.cos(angle) * 300;
+        helper.y = owner.y + Math.sin(angle) * 300;
+        helper.isSOS = true;
+        sosSquad.push(helper);
     }
+    setTimeout(() => sosSquad = [], CONFIG.SOS.DURATION);
 }
 
 function update() {
     if (!isGameActive) { requestAnimationFrame(update); return; }
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    bricks.forEach(b => { ctx.fillStyle = '#a52a2a'; ctx.fillRect(b.x, b.y, b.w, b.h); ctx.strokeStyle = '#5d1a1a'; ctx.strokeRect(b.x, b.y, b.w, b.h); });
+    bricks.forEach(b => { 
+        ctx.fillStyle = '#8B4513'; ctx.fillRect(b.x, b.y, b.w, b.h);
+        ctx.strokeStyle = '#5D2906'; ctx.strokeRect(b.x, b.y, b.w, b.h);
+    });
 
-    tanks.forEach(t => {
-        let nx = t.x + t.dx * CONFIG.TANK.SPEED;
-        let ny = t.y + t.dy * CONFIG.TANK.SPEED;
-        const col = bricks.some(b => nx+20 > b.x && nx-20 < b.x+b.w && ny+20 > b.y && ny-20 < b.y+b.h);
-        if (!col && nx > 20 && nx < canvas.width-20 && ny > 20 && ny < canvas.height-20) { t.x = nx; t.y = ny; }
-        if (t.dx !== 0 || t.dy !== 0) t.isAtBase = false;
+    tanks.concat(sosSquad).forEach(t => {
+        if (t.isAI || t.isSOS) updateAI(t, tanks[t.id === 0 ? 1 : 0]);
+        if (!t.isDestroyed) {
+            let oldX = t.x, oldY = t.y;
+            t.x += t.dx * CONFIG.TANK.SPEED; t.y += t.dy * CONFIG.TANK.SPEED;
+            if (checkCollision(t)) { t.x = oldX; t.y = oldY; }
+            if (t.dx !== 0 || t.dy !== 0) t.isAtBase = false;
+        }
         drawTank(t);
     });
 
-    sosTanks.forEach((s, i) => {
-        s.y += s.owner === 0 ? -1 : 1; s.life--;
-        drawTank(s, true);
-        if (s.life <= 0) sosTanks.splice(i, 1);
-    });
-
-    bullets.forEach((b, i) => {
+    bullets.forEach((b, bi) => {
         b.x += Math.cos(b.angle) * CONFIG.BULLET.SPEED; b.y += Math.sin(b.angle) * CONFIG.BULLET.SPEED;
-        ctx.fillStyle = 'yellow'; ctx.beginPath(); ctx.arc(b.x, b.y, 4, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = '#fffb00'; ctx.beginPath(); ctx.arc(b.x, b.y, 5, 0, Math.PI*2); ctx.fill();
+        
+        if (checkCollision(b, false)) bullets.splice(bi, 1);
+        
         tanks.forEach(t => {
-            if (b.owner !== t.id && Math.hypot(b.x-t.x, b.y-t.y) < 25) {
-                bullets.splice(i, 1); t.hp--;
-                if (t.hp <= 0) { tanks[b.owner].score++; t.reset(); }
-                document.getElementById('score1').textContent = tanks[0].score; document.getElementById('score2').textContent = tanks[1].score;
+            if (b.owner !== t.id && !t.isDestroyed && Math.hypot(b.x - t.x, b.y - t.y) < 25) {
+                bullets.splice(bi, 1); t.hp--; t.hitFlash = 5;
+                for(let k=0; k<8; k++) particles.push(new Particle(b.x, b.y, 'orange', 4));
+                if (t.hp <= 0) {
+                    t.isDestroyed = true;
+                    if (b.owner < 2) tanks[b.owner].score++;
+                    document.getElementById('score1').textContent = tanks[0].score;
+                    document.getElementById('score2').textContent = tanks[1].score;
+                    setTimeout(() => t.reset(), 2000);
+                }
             }
         });
     });
+
+    particles.forEach((p, i) => { p.update(); ctx.globalAlpha = p.life; ctx.fillStyle = p.color; ctx.fillRect(p.x, p.y, 3, 3); if(p.life <= 0) particles.splice(i, 1); });
+    ctx.globalAlpha = 1;
     requestAnimationFrame(update);
 }
 
-// УПРАВЛЕНИЕ (ДЖОЙСТИК №3)
-const setupJoystick = (joyId, stickId, tankIdx) => {
-    const joy = document.getElementById(joyId);
-    const stick = joy.querySelector('.stick');
-    const move = (e) => {
-        const rect = joy.getBoundingClientRect();
-        const touch = e.touches ? e.touches[0] : e;
-        const dx = (touch.clientX - (rect.left + 75)) / 75;
-        const dy = (touch.clientY - (rect.top + 75)) / 75;
-        const dist = Math.min(1, Math.hypot(dx, dy));
-        const angle = Math.atan2(dy, dx);
-        if (dist > 0.2) {
-            tanks[tankIdx].dx = Math.cos(angle) * dist;
-            tanks[tankIdx].dy = Math.sin(angle) * dist;
-            tanks[tankIdx].angle = angle;
-            stick.style.transform = `translate(${Math.cos(angle)*dist*40}px, ${Math.sin(angle)*dist*40}px)`;
-        }
+// УПРАВЛЕНИЕ БЕЗ КОНФЛИКТОВ
+const initControls = () => {
+    const bindJoy = (id, tidx) => {
+        const zone = document.getElementById(id);
+        const stick = zone.querySelector('.stick');
+        const handle = (e) => {
+            e.preventDefault(); e.stopPropagation();
+            const rect = zone.getBoundingClientRect();
+            const t = e.touches ? e.touches[0] : e;
+            const dx = (t.clientX - (rect.left + 80)) / 80;
+            const dy = (t.clientY - (rect.top + 80)) / 80;
+            const d = Math.min(1, Math.hypot(dx, dy));
+            const a = Math.atan2(dy, dx);
+            if (d > 0.1) {
+                tanks[tidx].dx = Math.cos(a) * d; tanks[tidx].dy = Math.sin(a) * d;
+                tanks[tidx].angle = a;
+                stick.style.transform = `translate(${Math.cos(a)*d*45}px, ${Math.sin(a)*d*45}px)`;
+            }
+        };
+        const reset = () => { tanks[tidx].dx = 0; tanks[tidx].dy = 0; stick.style.transform = 'none'; };
+        zone.addEventListener('touchstart', handle); zone.addEventListener('touchmove', handle);
+        zone.addEventListener('touchend', reset); zone.addEventListener('mousedown', handle);
+        window.addEventListener('mouseup', reset);
     };
-    const stop = () => { tanks[tankIdx].dx = 0; tanks[tankIdx].dy = 0; stick.style.transform = 'none'; };
-    joy.addEventListener('touchstart', move); joy.addEventListener('touchmove', move); joy.addEventListener('touchend', stop);
-    joy.addEventListener('mousedown', move); window.addEventListener('mouseup', stop);
+
+    const bindFire = (id, tidx) => {
+        const btn = document.getElementById(id);
+        btn.addEventListener('touchstart', (e) => {
+            e.preventDefault(); e.stopPropagation();
+            shoot(tanks[tidx]);
+            const t = tanks[tidx]; t.lastDown = Date.now();
+        });
+        btn.addEventListener('touchend', (e) => {
+            const t = tanks[tidx]; const dur = Date.now() - t.lastDown;
+            t.sosBuffer.push(dur < 250 ? '.' : '-');
+            if (t.sosBuffer.length > 9) t.sosBuffer.shift();
+            if (t.sosBuffer.join('').includes(CONFIG.SOS.SEQ)) { triggerSOS(tidx); t.sosBuffer = []; }
+        });
+    };
+
+    bindJoy('p1-joy', 0); bindJoy('p2-joy', 1);
+    bindFire('p1-fire', 0); bindFire('p2-fire', 1);
 };
 
 document.getElementById('start-game').onclick = () => {
     canvas.width = window.innerWidth; canvas.height = window.innerHeight;
-    tanks = [new Tank(0, '#2e7d32', true), new Tank(1, '#c62828', false)];
-    createBricks(); setupJoystick('p1-joy', 'p1-stick', 0); setupJoystick('p2-joy', 'p2-stick', 1);
-    isGameActive = true; document.getElementById('menu').style.display = 'none';
+    tanks = [new Tank(0, '#2e7d32', true), new Tank(1, '#c62828', false, gameMode === 'pve')];
+    if (gameMode === 'pve') document.getElementById('p2-controls').style.display = 'none';
+    createBricks(); initControls(); isGameActive = true;
+    document.getElementById('menu').style.display = 'none';
 };
 
-const setupFire = (id, idx) => {
-    const btn = document.getElementById(id);
-    btn.addEventListener('touchstart', (e) => { e.preventDefault(); shoot(tanks[idx]); handleSOS(idx, 'down'); });
-    btn.addEventListener('touchend', () => handleSOS(idx, 'up'));
-    btn.addEventListener('mousedown', () => { shoot(tanks[idx]); handleSOS(idx, 'down'); });
-    btn.addEventListener('mouseup', () => handleSOS(idx, 'up'));
-};
-setupFire('p1-fire', 0); setupFire('p2-fire', 1);
+document.querySelectorAll('.mode-btn').forEach(b => b.onclick = () => {
+    document.querySelectorAll('.mode-btn').forEach(x => x.classList.remove('active'));
+    b.classList.add('active'); gameMode = b.dataset.mode;
+});
 
 update();
 </script>
