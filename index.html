@@ -84,27 +84,82 @@
             box-shadow: 0 0 15px rgba(46, 125, 50, 0.5);
         }
         
+        .mode-btn.disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            background: #333;
+        }
+        
+        .mode-btn.disabled:hover {
+            transform: none;
+            background: #333;
+        }
+        
+        /* Модальное окно выбора сложности */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 2000;
+            display: none;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .modal-content {
+            background: #333;
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+        }
+        
+        .modal-title {
+            color: #ffcc00;
+            font-size: 28px;
+            margin-bottom: 20px;
+        }
+        
         .difficulty-buttons {
             display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
+            flex-direction: column;
+            gap: 15px;
             margin: 20px 0;
-            justify-content: center;
         }
         
         .diff-btn {
-            padding: 10px 20px;
-            background: #333;
+            padding: 15px;
+            background: #444;
             color: white;
             border: 2px solid #555;
-            border-radius: 5px;
+            border-radius: 10px;
             cursor: pointer;
-            font-size: 18px;
+            font-size: 20px;
+            transition: all 0.2s;
+        }
+        
+        .diff-btn:hover {
+            background: #555;
+            transform: scale(1.05);
         }
         
         .diff-btn.active {
             border-color: #ffcc00;
             background: #555;
+            box-shadow: 0 0 10px rgba(255, 204, 0, 0.3);
+        }
+        
+        .diff-description {
+            font-size: 14px;
+            color: #aaa;
+            margin-top: 5px;
+            text-align: left;
+            padding-left: 10px;
         }
         
         .start-btn {
@@ -264,23 +319,50 @@
         Игра предназначена для вертикального положения.
     </div>
     
+    <!-- Модальное окно выбора сложности -->
+    <div id="difficulty-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h2 class="modal-title">Выберите сложность ИИ</h2>
+            <div class="difficulty-buttons">
+                <button class="diff-btn" data-diff="easy">
+                    Легко
+                    <div class="diff-description">• Медленная реакция<br>• Редко стреляет<br>• Легко победить</div>
+                </button>
+                <button class="diff-btn" data-diff="medium">
+                    Средне
+                    <div class="diff-description">• Нормальная реакция<br>• Средняя точность<br>• Сбалансировано</div>
+                </button>
+                <button class="diff-btn" data-diff="hard">
+                    Сложно
+                    <div class="diff-description">• Быстрая реакция<br>• Высокая точность<br>• Сложно победить</div>
+                </button>
+                <button class="diff-btn active" data-diff="insane">
+                    Безумие
+                    <div class="diff-description">• Молниеносная реакция<br>• Почти не промахивается<br>• Экстремальная сложность</div>
+                </button>
+            </div>
+            <button id="confirm-difficulty" style="
+                padding: 15px 30px;
+                font-size: 20px;
+                background: linear-gradient(45deg, #2e7d32, #4caf50);
+                color: white;
+                border: none;
+                border-radius: 10px;
+                cursor: pointer;
+                margin-top: 20px;
+                font-weight: bold;
+                width: 100%;
+            ">НАЧАТЬ ИГРУ</button>
+        </div>
+    </div>
+    
     <!-- Меню выбора режима -->
     <div id="menu">
         <h1 class="menu-title">БРОНЕТАНКИ</h1>
         <div class="mode-buttons">
             <button class="mode-btn active" data-mode="pvp">1 на 1 (PvP)</button>
             <button class="mode-btn" data-mode="pve">Против ИИ (PvE)</button>
-            <button class="mode-btn" data-mode="survival">Выживание</button>
-        </div>
-        
-        <div id="difficulty-selector" style="display: none;">
-            <h3 style="text-align: center; margin-bottom: 10px;">Сложность ИИ:</h3>
-            <div class="difficulty-buttons">
-                <button class="diff-btn active" data-diff="easy">Легко</button>
-                <button class="diff-btn" data-diff="medium">Средне</button>
-                <button class="diff-btn" data-diff="hard">Сложно</button>
-                <button class="diff-btn" data-diff="insane">Безумие</button>
-            </div>
+            <button class="mode-btn disabled" data-mode="survival">Выживание (в разработке)</button>
         </div>
         
         <button class="start-btn" id="start-game">НАЧАТЬ ИГРУ</button>
@@ -343,7 +425,7 @@ const CONFIG = {
         MAX_BUFFER: 9,
         DOT_MAX_TIME: 250,
         DASH_MIN_TIME: 400,
-        TANK_COUNT: 6, // Уменьшил для портретного режима
+        TANK_COUNT: 6,
         TANK_LIFE: 600,
         TANK_SPEED: 1.8
     },
@@ -358,10 +440,38 @@ const CONFIG = {
     AI: {
         UPDATE_INTERVAL: 100,
         DIFFICULTY: {
-            easy: { accuracy: 0.3, reaction: 800, aggression: 0.3, dodgeChance: 0.2 },
-            medium: { accuracy: 0.6, reaction: 500, aggression: 0.5, dodgeChance: 0.4 },
-            hard: { accuracy: 0.8, reaction: 300, aggression: 0.7, dodgeChance: 0.6 },
-            insane: { accuracy: 0.95, reaction: 150, aggression: 0.9, dodgeChance: 0.8 }
+            easy: { 
+                accuracy: 0.3, 
+                reaction: 800, 
+                aggression: 0.3, 
+                dodgeChance: 0.2,
+                shootCooldown: 1200,
+                speed: 0.4
+            },
+            medium: { 
+                accuracy: 0.6, 
+                reaction: 500, 
+                aggression: 0.5, 
+                dodgeChance: 0.4,
+                shootCooldown: 900,
+                speed: 0.5
+            },
+            hard: { 
+                accuracy: 0.8, 
+                reaction: 300, 
+                aggression: 0.7, 
+                dodgeChance: 0.6,
+                shootCooldown: 700,
+                speed: 0.6
+            },
+            insane: { 
+                accuracy: 0.95, 
+                reaction: 150, 
+                aggression: 0.9, 
+                dodgeChance: 0.8,
+                shootCooldown: 500,
+                speed: 0.7
+            }
         }
     }
 };
@@ -377,27 +487,27 @@ let sosTanks = [];
 let bricks = [];
 let tanks = [];
 let gameMode = 'pvp';
-let aiDifficulty = 'medium';
+let aiDifficulty = 'insane'; // По умолчанию
 let aiPlayer = null;
 let lastAIUpdate = 0;
 let isGameActive = false;
-let isLandscapeMode = false; // Теперь отслеживаем альбомную ориентацию
+let isLandscapeMode = false;
+let selectedMode = 'pvp'; // Режим, выбранный в меню
 
-// ========== КЛАСС ТАНКА (обновлен для портретного режима) ==========
+// ========== КЛАСС ТАНКА ==========
 class Tank {
     constructor(id, color, isLeftPlayer, isAI = false) {
         this.id = id;
         this.color = color;
-        this.isLeftPlayer = isLeftPlayer; // true = слева, false = справа
+        this.isLeftPlayer = isLeftPlayer;
         this.isAI = isAI;
         this.reset();
     }
     
     reset() {
-        // В портретном режиме танки по бокам
         this.x = this.isLeftPlayer ? 100 : canvas.width - 100;
         this.y = canvas.height / 2;
-        this.angle = this.isLeftPlayer ? 0 : Math.PI; // Смотрят друг на друга
+        this.angle = this.isLeftPlayer ? 0 : Math.PI;
         this.score = 0;
         this.hp = CONFIG.TANK.INITIAL_HP;
         this.maxHp = CONFIG.TANK.INITIAL_HP;
@@ -415,9 +525,9 @@ class Tank {
     }
 }
 
-// ========== КЛАСС ИИ (адаптирован для портретного режима) ==========
+// ========== КЛАСС ИИ ==========
 class AI {
-    constructor(tank, difficulty = 'medium') {
+    constructor(tank, difficulty = 'insane') {
         this.tank = tank;
         this.difficulty = difficulty;
         this.config = CONFIG.AI.DIFFICULTY[difficulty];
@@ -426,6 +536,9 @@ class AI {
         this.dodgeTimer = 0;
         this.patrolPoints = [];
         this.waypointIndex = 0;
+        
+        // Устанавливаем перезарядку в зависимости от сложности
+        this.tank.shootCooldown = this.config.shootCooldown;
     }
     
     update(targetTank) {
@@ -449,7 +562,6 @@ class AI {
             return;
         }
         
-        // В портретном режиме используем вертикальное патрулирование
         if (distance < 150) {
             this.state = 'retreat';
             this.retreatFrom(targetTank);
@@ -494,8 +606,8 @@ class AI {
             const bulletAngle = closestBullet.angle;
             const dodgeAngle = bulletAngle + Math.PI / 2 * (Math.random() > 0.5 ? 1 : -1);
             
-            this.tank.dx = Math.cos(dodgeAngle) * 0.6;
-            this.tank.dy = Math.sin(dodgeAngle) * 0.6;
+            this.tank.dx = Math.cos(dodgeAngle) * 0.6 * this.config.speed;
+            this.tank.dy = Math.sin(dodgeAngle) * 0.6 * this.config.speed;
             this.dodgeTimer = 10;
         }
     }
@@ -505,8 +617,8 @@ class AI {
         
         if (moveChance > 0.5) {
             const angleToTarget = Math.atan2(target.y - this.tank.y, target.x - this.tank.x);
-            this.tank.dx = Math.cos(angleToTarget) * 0.5;
-            this.tank.dy = Math.sin(angleToTarget) * 0.5;
+            this.tank.dx = Math.cos(angleToTarget) * 0.5 * this.config.speed;
+            this.tank.dy = Math.sin(angleToTarget) * 0.5 * this.config.speed;
         } else {
             this.tank.dx = 0;
             this.tank.dy = 0;
@@ -519,8 +631,8 @@ class AI {
         const angleFromTarget = Math.atan2(this.tank.y - target.y, this.tank.x - target.x);
         const randomAngle = angleFromTarget + (Math.random() - 0.5) * 0.5;
         
-        this.tank.dx = Math.cos(randomAngle) * 0.4;
-        this.tank.dy = Math.sin(randomAngle) * 0.4;
+        this.tank.dx = Math.cos(randomAngle) * 0.4 * this.config.speed;
+        this.tank.dy = Math.sin(randomAngle) * 0.4 * this.config.speed;
         this.tank.angle = Math.atan2(target.y - this.tank.y, target.x - this.tank.x);
     }
     
@@ -539,13 +651,12 @@ class AI {
         const targetPoint = this.patrolPoints[this.waypointIndex];
         const angleToPoint = Math.atan2(targetPoint.y - this.tank.y, targetPoint.x - this.tank.x);
         
-        this.tank.dx = Math.cos(angleToPoint) * 0.3;
-        this.tank.dy = Math.sin(angleToPoint) * 0.3;
+        this.tank.dx = Math.cos(angleToPoint) * 0.3 * this.config.speed;
+        this.tank.dy = Math.sin(angleToPoint) * 0.3 * this.config.speed;
         this.tank.angle = angleToPoint;
     }
     
     generatePatrolPoints() {
-        // Вертикальные точки патрулирования для портретного режима
         const top = 100;
         const bottom = canvas.height - 100;
         const left = this.tank.isLeftPlayer ? 80 : canvas.width - 80;
@@ -595,12 +706,11 @@ class AI {
     }
 }
 
-// ========== ПРОВЕРКА ОРИЕНТАЦИИ - теперь для портретного режима ==========
+// ========== ПРОВЕРКА ОРИЕНТАЦИИ ==========
 function checkOrientation() {
     const warning = document.getElementById('orientation-warning');
     const controlsHint = document.querySelector('.controls-hint');
     
-    // Проверяем альбомную ориентацию (ширина больше высоты)
     if (window.innerWidth > window.innerHeight) {
         isLandscapeMode = true;
         warning.style.display = 'block';
@@ -618,41 +728,37 @@ function checkOrientation() {
 
 window.addEventListener('resize', checkOrientation);
 window.addEventListener('orientationchange', checkOrientation);
-checkOrientation();
 
 // ========== МЕНЮ И УПРАВЛЕНИЕ ИГРОЙ ==========
 const menu = document.getElementById('menu');
 const startBtn = document.getElementById('start-game');
 const modeButtons = document.querySelectorAll('.mode-btn');
-const diffButtons = document.querySelectorAll('.diff-btn');
-const difficultySelector = document.getElementById('difficulty-selector');
 const gameModeIndicator = document.getElementById('game-mode-indicator');
 const p2Controls = document.getElementById('p2-controls');
 const controlsHint = document.querySelector('.controls-hint');
+const difficultyModal = document.getElementById('difficulty-modal');
+const diffButtons = difficultyModal.querySelectorAll('.diff-btn');
+const confirmDifficultyBtn = document.getElementById('confirm-difficulty');
 
+// Выбор режима игры
 modeButtons.forEach(btn => {
     btn.addEventListener('click', () => {
-        if (isLandscapeMode) return;
+        if (isLandscapeMode || btn.classList.contains('disabled')) return;
         
         modeButtons.forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
-        gameMode = btn.dataset.mode;
-        
-        if (gameMode === 'pve') {
-            difficultySelector.style.display = 'block';
-        } else {
-            difficultySelector.style.display = 'none';
-        }
+        selectedMode = btn.dataset.mode;
         
         const modeNames = {
             'pvp': '1 на 1 (PvP)',
             'pve': 'Против ИИ (PvE)',
             'survival': 'Выживание'
         };
-        gameModeIndicator.textContent = modeNames[gameMode];
+        gameModeIndicator.textContent = modeNames[selectedMode];
     });
 });
 
+// Выбор сложности в модальном окне
 diffButtons.forEach(btn => {
     btn.addEventListener('click', () => {
         diffButtons.forEach(b => b.classList.remove('active'));
@@ -661,9 +767,28 @@ diffButtons.forEach(btn => {
     });
 });
 
+// Подтверждение выбора сложности
+confirmDifficultyBtn.addEventListener('click', () => {
+    difficultyModal.style.display = 'none';
+    gameMode = 'pve'; // Устанавливаем режим PvE
+    startActualGame();
+});
+
+// Нажатие на кнопку "Начать игру"
 startBtn.addEventListener('click', () => {
     if (isLandscapeMode) return;
-    startGame();
+    
+    if (selectedMode === 'pve') {
+        // Для режима PvE показываем модальное окно выбора сложности
+        difficultyModal.style.display = 'flex';
+    } else if (selectedMode === 'pvp') {
+        // Для PvP сразу начинаем игру
+        gameMode = 'pvp';
+        startActualGame();
+    } else if (selectedMode === 'survival') {
+        // Для режима выживания показываем сообщение
+        alert('Режим "Выживание" находится в разработке. Выберите другой режим.');
+    }
 });
 
 const backBtn = document.createElement('button');
@@ -676,7 +801,40 @@ backBtn.addEventListener('click', () => {
     returnToMenu();
 });
 
-// ========== СИСТЕМА УПРАВЛЕНИЯ (оптимизирована для портретного режима) ==========
+// ========== ФУНКЦИИ ЗАПУСКА ИГРЫ ==========
+function startActualGame() {
+    menu.style.display = 'none';
+    gameModeIndicator.style.display = 'block';
+    backBtn.style.display = 'block';
+    controlsHint.style.display = 'block';
+    
+    if (gameMode === 'pve') {
+        p2Controls.style.display = 'none';
+    } else {
+        p2Controls.style.display = 'block';
+    }
+    
+    initGame();
+    isGameActive = true;
+}
+
+function returnToMenu() {
+    menu.style.display = 'flex';
+    gameModeIndicator.style.display = 'none';
+    backBtn.style.display = 'none';
+    controlsHint.style.display = 'none';
+    
+    isGameActive = false;
+    bullets = [];
+    particles = [];
+    sosTanks = [];
+    
+    controlSystem.clearAll();
+    
+    p2Controls.style.display = 'block';
+}
+
+// ========== СИСТЕМА УПРАВЛЕНИЯ ==========
 class ControlSystem {
     constructor() {
         this.joyActivePointers = new Map();
@@ -686,11 +844,13 @@ class ControlSystem {
     initPlayerControls(joyId, fireId, playerIndex) {
         const joy = document.getElementById(joyId);
         const fire = document.getElementById(fireId);
-        const stick = joy.querySelector('.stick');
         
-        // Убираем все старые обработчики
-        joy.replaceWith(joy.cloneNode(true));
-        fire.replaceWith(fire.cloneNode(true));
+        // Создаем клоны для сброса старых обработчиков
+        const joyClone = joy.cloneNode(true);
+        const fireClone = fire.cloneNode(true);
+        
+        joy.parentNode.replaceChild(joyClone, joy);
+        fire.parentNode.replaceChild(fireClone, fire);
         
         const newJoy = document.getElementById(joyId);
         const newFire = document.getElementById(fireId);
@@ -822,68 +982,38 @@ class ControlSystem {
         this.joyActivePointers.clear();
         this.fireActivePointers.clear();
         
-        tanks.forEach(tank => {
-            tank.dx = 0;
-            tank.dy = 0;
-        });
+        if (tanks && tanks.length > 0) {
+            tanks.forEach(tank => {
+                tank.dx = 0;
+                tank.dy = 0;
+            });
+        }
         
         document.querySelectorAll('.stick').forEach(stick => {
-            stick.style.transform = '';
+            if (stick) stick.style.transform = '';
         });
         
         document.querySelectorAll('.btn-fire').forEach(btn => {
-            btn.style.backgroundColor = '';
+            if (btn) btn.style.backgroundColor = '';
         });
     }
 }
 
 const controlSystem = new ControlSystem();
 
-// ========== ФУНКЦИИ УПРАВЛЕНИЯ ИГРОЙ ==========
-function startGame() {
-    menu.style.display = 'none';
-    gameModeIndicator.style.display = 'block';
-    backBtn.style.display = 'block';
-    controlsHint.style.display = 'block';
-    
-    if (gameMode === 'pve') {
-        p2Controls.style.display = 'none';
-    } else {
-        p2Controls.style.display = 'block';
-    }
-    
-    initGame();
-    isGameActive = true;
-}
-
-function returnToMenu() {
-    menu.style.display = 'flex';
-    gameModeIndicator.style.display = 'none';
-    backBtn.style.display = 'none';
-    controlsHint.style.display = 'none';
-    
-    isGameActive = false;
-    bullets = [];
-    particles = [];
-    sosTanks = [];
-    
-    controlSystem.clearAll();
-    
-    p2Controls.style.display = 'block';
-}
-
+// ========== ИНИЦИАЛИЗАЦИЯ ИГРЫ ==========
 function initGame() {
     bullets = [];
     particles = [];
     sosTanks = [];
     tanks = [];
     
-    if (gameMode === 'pvp' || gameMode === 'survival') {
-        tanks.push(new Tank(0, '#2e7d32', true));  // Зеленый слева
-        tanks.push(new Tank(1, '#c62828', false)); // Красный справа
+    if (gameMode === 'pvp') {
+        tanks.push(new Tank(0, '#2e7d32', true));
+        tanks.push(new Tank(1, '#c62828', false));
     } else if (gameMode === 'pve') {
-        tanks.push(new Tank(0, '#2e7d32', true)); // Игрок слева
-        const aiTank = new Tank(1, '#c62828', false, true); // ИИ справа
+        tanks.push(new Tank(0, '#2e7d32', true));
+        const aiTank = new Tank(1, '#c62828', false, true);
         tanks.push(aiTank);
         aiPlayer = new AI(aiTank, aiDifficulty);
     }
@@ -936,7 +1066,7 @@ const AudioManager = {
     }
 };
 
-// ========== СОЗДАНИЕ УКРЫТИЙ (адаптировано для портретного режима) ==========
+// ========== СОЗДАНИЕ УКРЫТИЙ ==========
 function createBricks() {
     bricks = [];
     
@@ -956,13 +1086,10 @@ function createBricks() {
     const centerX = canvas.width / 2;
     const centerY = canvas.height / 2;
     
-    // Центральные укрытия для портретного режима
     addBrickWall(centerX - 50, centerY - 60, 4, 2);
     addBrickWall(centerX - 50, centerY + 40, 4, 2);
-    
-    // Боковые укрытия
-    addBrickWall(80, centerY - 30, 2, 3); // Слева
-    addBrickWall(canvas.width - 130, centerY - 30, 2, 3); // Справа
+    addBrickWall(80, centerY - 30, 2, 3);
+    addBrickWall(canvas.width - 130, centerY - 30, 2, 3);
 }
 
 // ========== ОТРИСОВКА ==========
@@ -982,28 +1109,23 @@ function drawTank(tank, isSOSTank = false) {
     ctx.translate(tank.x, tank.y);
     ctx.rotate(tank.angle);
     
-    // Гусеницы
     ctx.fillStyle = '#111';
     ctx.fillRect(-18, -15, 36, 6);
     ctx.fillRect(-18, 9, 36, 6);
     
-    // Корпус
     ctx.fillStyle = tank.color;
     ctx.beginPath();
     ctx.roundRect(-15, -10, 30, 20, 3);
     ctx.fill();
     
-    // Центральная точка
     ctx.beginPath();
     ctx.arc(-2, 0, 8, 0, Math.PI * 2);
     ctx.fill();
     ctx.stroke();
     
-    // Дуло
     ctx.fillStyle = (tank.slow < 1 && !isSOSTank) ? '#00fbff' : '#222';
     ctx.fillRect(6, -2, 18, 4);
     
-    // Индикатор ИИ
     if (tank.isAI && !isSOSTank) {
         ctx.fillStyle = '#ffcc00';
         ctx.font = '10px Arial';
@@ -1013,11 +1135,9 @@ function drawTank(tank, isSOSTank = false) {
     
     ctx.restore();
     
-    // Полоска здоровья
     if (!isSOSTank && tank.isAlive) {
         const healthBarWidth = 35;
         const healthBarHeight = 5;
-        
         const healthBarDistance = 28;
         const healthBarAngle = tank.angle + Math.PI;
         
@@ -1322,15 +1442,15 @@ function gameLoop() {
 }
 
 // ========== ЗАПУСК ИГРЫ ==========
-window.addEventListener('resize', resizeCanvas);
-
 window.addEventListener('load', () => {
     resizeCanvas();
+    checkOrientation();
     menu.style.display = 'flex';
     gameLoop();
 });
 
-// Предотвращаем масштабирование и жесты
+window.addEventListener('resize', resizeCanvas);
+
 document.addEventListener('gesturestart', e => e.preventDefault());
 document.addEventListener('gesturechange', e => e.preventDefault());
 document.addEventListener('gestureend', e => e.preventDefault());
