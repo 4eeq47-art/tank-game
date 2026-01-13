@@ -3,186 +3,156 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>БРОНЕТАНКИ: ГЕНЕРАЦИЯ 10</title>
+    <title>ТАНКИ: ВЕРТИКАЛЬНЫЙ ПАРАД</title>
     <style>
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        body { margin: 0; background: #333; overflow: hidden; touch-action: none; font-family: 'Courier New', monospace; }
-        canvas { display: block; position: absolute; inset: 0; }
-        #gameCanvas { z-index: 5; display: none; background: #444; }
-        
-        /* Главное меню */
-        #menu { position: fixed; inset: 0; z-index: 100; display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(0,0,0,0.8); }
-        .m-card { background: #eee; padding: 25px; border: 5px solid #000; border-radius: 15px; text-align: center; width: 340px; box-shadow: 0 0 30px rgba(0,0,0,0.5); }
-        .btn { width: 100%; padding: 15px; margin: 8px 0; font-size: 18px; font-weight: 900; cursor: pointer; border: 3px solid #000; border-radius: 10px; text-transform: uppercase; }
-        .btn-start { background: #c62828; color: #fff; font-size: 24px; }
-        .btn-dev { background: #ff9800; color: #000; font-size: 14px; }
-        .btn-mode { background: #444; color: #fff; }
-        .btn-mode.active { background: #2e7d32; border-color: #aeea00; }
-
-        /* Панель разработчика (выплывающая) */
-        #dev-overlay { display: none; position: fixed; inset: 0; z-index: 110; background: #222; color: #fff; padding: 20px; overflow-y: auto; }
-        .dev-title { color: #ff9800; text-align: center; border-bottom: 2px solid #444; padding-bottom: 10px; }
-        .dev-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 15px 0; }
-        .dev-opt { padding: 12px; background: #333; border: 1px solid #555; text-align: center; font-size: 11px; cursor: pointer; border-radius: 5px; }
-        .dev-opt.active { background: #2e7d32; border-color: #fff; font-weight: bold; }
-
-        #ui { position: fixed; inset: 0; z-index: 10; pointer-events: none; display: none; }
-        .score { position: absolute; width: 100%; text-align: center; font-weight: 900; color: #fff; font-size: 24px; }
-        #exit-btn { position: fixed; right: 10px; top: 50%; transform: translateY(-50%) rotate(90deg); z-index: 200; padding: 10px 20px; background: #000; color: #fff; border: 2px solid #fff; font-weight: bold; display: none; }
-        #gen-num { position: absolute; top: 15px; left: 15px; color: #fff; opacity: 0.7; font-size: 14px; }
+        body { margin: 0; background: #4d4d4d; overflow: hidden; touch-action: none; font-family: 'Arial Black', sans-serif; }
+        canvas { display: block; background: linear-gradient(to bottom, #87CEEB 0%, #E0F7FA 100%); }
+        #ui {
+            position: fixed; inset: 0; z-index: 10;
+            display: flex; flex-direction: column; align-items: center; justify-content: flex-end;
+            padding-bottom: 80px; pointer-events: none;
+        }
+        .title-block { position: absolute; top: 15%; text-align: center; width: 100%; }
+        .title { color: white; font-size: 12vw; text-shadow: 4px 4px 0 #2e7d32; margin: 0; text-transform: uppercase; }
+        .gen-num { color: #111; font-size: 14px; opacity: 0.6; }
+        .btn-start {
+            padding: 25px 80px; font-size: 28px; background: #c62828; color: white;
+            border: 6px solid #fff; border-radius: 15px; cursor: pointer; pointer-events: auto;
+            box-shadow: 0 10px 0 #8e0000; transition: 0.1s;
+        }
+        .btn-start:active { transform: translateY(5px); box-shadow: 0 5px 0 #8e0000; }
     </style>
 </head>
 <body>
 
-<canvas id="gameCanvas"></canvas>
-
-<div id="menu">
-    <div id="gen-num">ГЕНЕРАЦИЯ: 10</div>
-    <div class="m-card">
-        <h1 style="margin: 0 0 20px 0; color: #222;">БРОНЕТАНКИ</h1>
-        
-        <button class="btn btn-mode active" id="pvp-btn" onclick="setMode('pvp')">ИГРОК VS ИГРОК</button>
-        <button class="btn btn-mode" id="pve-btn" onclick="setMode('pve')">ИГРОК VS БОТ</button>
-        
-        <button class="btn btn-start" onclick="startGame()">В БОЙ!</button>
-        
-        <button class="btn btn-dev" onclick="toggleDev(true)">Настройки (DEV MODE)</button>
-    </div>
-</div>
-
-<div id="dev-overlay">
-    <h2 class="dev-title">АРХИВ ГЕНЕРАЦИЙ</h2>
-    
-    <p>МОДЕЛЬ ТАНКА:</p>
-    <div class="dev-grid" id="tank-opts">
-        <div class="dev-opt" onclick="setCfg('tank','alpha')">ALPHA (КВАДРАТ)</div>
-        <div class="dev-opt" onclick="setCfg('tank','beta')">BETA (+HP)</div>
-        <div class="dev-opt active" onclick="setCfg('tank','final')">FINAL (+ВСПЫШКА)</div>
-    </div>
-
-    <p>ТИП УКРЫТИЙ:</p>
-    <div class="dev-grid" id="wall-opts">
-        <div class="dev-opt" onclick="setCfg('wall','walls')">ПЕРВЫЕ СТЕНЫ</div>
-        <div class="dev-opt" onclick="setCfg('wall','back')">ГЕН 4 (ТЫЛ)</div>
-        <div class="dev-opt active" onclick="setCfg('wall','front')">ГЕН 6 (ДУЛО)</div>
-        <div class="dev-opt" onclick="setCfg('wall','bastion')">ГЕН 7 (БАСТИОН)</div>
-    </div>
-
-    <p>СТИЛЬ ИНТЕРФЕЙСА:</p>
-    <div class="dev-grid" id="ui-opts">
-        <div class="dev-opt" onclick="setCfg('ui','corner')">УГЛОВОЙ (OLD)</div>
-        <div class="dev-opt active" onclick="setCfg('ui','center')">ЦЕНТР (NEW)</div>
-    </div>
-
-    <button class="btn btn-start" onclick="toggleDev(false)">ПРИМЕНИТЬ</button>
-</div>
+<canvas id="menuCanvas"></canvas>
 
 <div id="ui">
-    <div id="score2" class="score">0</div>
-    <div id="score1" class="score">0</div>
+    <div class="title-block">
+        <h1 class="title">ТАНКИ</h1>
+        <div class="gen-num">ГЕНЕРАЦИЯ №12 (PORTRAIT)</div>
+    </div>
+    <button class="btn-start" onclick="initAudio()">В БОЙ</button>
 </div>
 
-<button id="exit-btn" onclick="location.reload()">В МЕНЮ</button>
-
 <script>
-let cfg = { tank: 'final', wall: 'front', ui: 'center', mode: 'pvp' };
-const canvas = document.getElementById('gameCanvas'), ctx = canvas.getContext('2d');
-let W, H, isGame = false, tanks = [], bricks = [];
+const canvas = document.getElementById('menuCanvas');
+const ctx = canvas.getContext('2d');
+let W, H, audioCtx;
 
-function setMode(m) {
-    cfg.mode = m;
-    document.getElementById('pvp-btn').classList.toggle('active', m === 'pvp');
-    document.getElementById('pve-btn').classList.toggle('active', m === 'pve');
-}
+const vehicles = [], planes = [], bombs = [], fx = [];
 
-function toggleDev(show) {
-    document.getElementById('dev-overlay').style.display = show ? 'block' : 'none';
-}
-
-function setCfg(type, val) {
-    cfg[type] = val;
-    const btns = document.querySelectorAll(`#${type}-opts .dev-opt`);
-    btns.forEach(b => b.classList.remove('active'));
-    event.target.classList.add('active');
-}
-
-function drawTank(t) {
-    ctx.save(); ctx.translate(t.x, t.y);
-    
-    // HP (кроме Alpha)
-    if(cfg.tank !== 'alpha') {
-        ctx.fillStyle = '#000'; ctx.fillRect(t.isBottom?40:-45, -20, 5, 40);
-        ctx.fillStyle = t.id===0?'#69f0ae':'#ff5252';
-        ctx.fillRect(t.isBottom?40:-45, -20 + (40*(1-t.hp/3)), 5, 40*(t.hp/3));
+class Tank {
+    constructor(y, speed, scale, color) {
+        this.y = y; this.speed = speed; this.scale = scale; this.color = color;
+        this.x = -150 - Math.random() * 400;
+        this.wAngle = 0;
     }
-
-    ctx.rotate(t.angle);
-    
-    if(cfg.tank === 'final') {
-        ctx.fillStyle = '#111'; ctx.fillRect(-28,-22,56,12); ctx.fillRect(-28,10,56,12);
-        ctx.fillStyle = t.color; ctx.strokeStyle = '#000'; ctx.lineWidth = 2;
-        ctx.beginPath(); ctx.roundRect(-24,-18,48,36,4); ctx.fill(); ctx.stroke();
-        ctx.beginPath(); ctx.arc(0,0,16,0,7); ctx.fill(); ctx.stroke();
-        ctx.fillStyle = '#111'; ctx.fillRect(14,-4,35,8);
-        if(t.flash > 0) {
-            let g = ctx.createRadialGradient(60, 0, 0, 60, 0, 25);
-            g.addColorStop(0, '#fff'); g.addColorStop(1, 'transparent');
-            ctx.fillStyle = g; ctx.beginPath(); ctx.arc(60,0,25,0,7); ctx.fill();
-            t.flash--;
+    update() {
+        this.x += this.speed;
+        this.wAngle += this.speed * 0.15;
+        if(this.x > W + 150) this.x = -150;
+    }
+    draw() {
+        ctx.save(); ctx.translate(this.x, this.y); ctx.scale(this.scale, this.scale);
+        // Гусеницы
+        ctx.fillStyle = '#222'; ctx.beginPath(); ctx.roundRect(-40, 10, 80, 15, 5); ctx.fill();
+        // Катки (вращение)
+        ctx.fillStyle = '#555';
+        for(let i=-30; i<=30; i+=15) {
+            ctx.save(); ctx.translate(i, 18); ctx.rotate(this.wAngle); ctx.fillRect(-4, -4, 8, 8); ctx.restore();
         }
-    } else {
-        ctx.fillStyle = t.color; ctx.fillRect(-20,-20,40,40);
-        ctx.fillStyle = '#000'; ctx.fillRect(10,-5,25,10);
-    }
-    ctx.restore();
-}
-
-function createWalls() {
-    bricks = []; let cx = W/2 - 75;
-    const r = (x,y,w,h) => { for(let i=0; i<w; i++) for(let j=0; j<h; j++) bricks.push({x:x+i*26, y:y+j*16}); };
-    
-    switch(cfg.wall) {
-        case 'walls': r(60, H/2-60, 2, 8); r(W-110, H/2-60, 2, 8); break;
-        case 'back': r(cx, 150, 6, 1); r(cx, 100, 1, 4); r(cx+130, 100, 1, 4); break;
-        case 'front': r(cx, 250, 6, 1); r(cx, 200, 1, 4); r(cx+130, 200, 1, 4); break;
-        case 'bastion': r(cx, 250, 6, 2); r(cx, 200, 1, 4); r(cx+130, 200, 1, 4); break;
+        // Корпус и дуло
+        ctx.fillStyle = this.color; ctx.strokeStyle = '#000'; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.roundRect(-35, -10, 70, 22, 4); ctx.fill(); ctx.stroke();
+        ctx.beginPath(); ctx.arc(0, -10, 14, Math.PI, 0); ctx.fill(); ctx.stroke();
+        ctx.fillStyle = '#111'; ctx.fillRect(5, -18, 35, 6);
+        ctx.restore();
     }
 }
 
-function startGame() {
+class Plane {
+    constructor(y, speed, scale, type) {
+        this.y = y; this.speed = speed; this.scale = scale; this.type = type;
+        this.x = W + 200; this.timer = 0;
+    }
+    update() {
+        this.x -= this.speed; this.timer++;
+        if(this.x < -200) { this.x = W + 200; this.y = H * (0.1 + Math.random() * 0.4); }
+        if(this.type === 'bomber' && this.timer % 180 === 0) {
+            bombs.push({x: this.x, y: this.y + 20, vy: 1});
+            playSnd(250, 'sine', 1.2, 0.05, 60);
+        }
+        if(this.type === 'fighter' && this.timer % 120 === 0) {
+            fx.push({x: this.x-20, y: this.y+10, vx: -12, vy: 8, l: 15});
+        }
+    }
+    draw() {
+        ctx.save(); ctx.translate(this.x, this.y); ctx.scale(this.scale, this.scale);
+        ctx.fillStyle = '#4b5320'; // Крылья
+        ctx.beginPath(); ctx.ellipse(0, 0, 12, 45, 0, 0, 7); ctx.fill();
+        ctx.fillStyle = '#6b8e23'; ctx.strokeStyle = '#111';
+        ctx.beginPath(); ctx.ellipse(0, 4, 45, 10, 0, 0, 7); ctx.fill(); ctx.stroke();
+        ctx.restore();
+    }
+}
+
+function playSnd(f, t, d, v, s) {
+    if(!audioCtx) return;
+    const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+    o.type = t; o.frequency.setValueAtTime(f, audioCtx.currentTime);
+    if(s) o.frequency.exponentialRampToValueAtTime(s, audioCtx.currentTime + d);
+    g.gain.setValueAtTime(v, audioCtx.currentTime);
+    g.gain.linearRampToValueAtTime(0, audioCtx.currentTime + d);
+    o.connect(g); g.connect(audioCtx.destination);
+    o.start(); o.stop(audioCtx.currentTime + d);
+}
+
+function resize() {
     W = window.innerWidth; H = window.innerHeight;
     canvas.width = W; canvas.height = H;
-    document.getElementById('menu').style.display = 'none';
-    document.getElementById('ui').style.display = 'block';
-    document.getElementById('exit-btn').style.display = 'block';
-    canvas.style.display = 'block';
-    
-    tanks = [{x:W/2, y:H-100, angle:-Math.PI/2, color:'#2e7d32', hp:3, flash:0, id:0, isBottom:true}];
-    createWalls();
-    
-    const s1 = document.getElementById('score1'), s2 = document.getElementById('score2');
-    if(cfg.ui === 'center') {
-        s1.style.cssText = "bottom: 140px; font-size: 24px;";
-        s2.style.cssText = "top: 120px; font-size: 24px; transform: rotate(180deg);";
-    } else {
-        s1.style.cssText = "bottom: 20px; left: 20px; width: auto; font-size: 32px;";
-        s2.style.cssText = "top: 20px; right: 20px; width: auto; font-size: 32px;";
-    }
-    
-    isGame = true;
-    update();
+    vehicles.length = 0; planes.length = 0;
+    // Размещение по вертикали
+    vehicles.push(new Tank(H - 60, 2.5, 1.3, '#2e7d32'));
+    vehicles.push(new Tank(H - 140, 1.8, 0.9, '#556b2f'));
+    planes.push(new Plane(H * 0.15, 4, 1.2, 'bomber'));
+    planes.push(new Plane(H * 0.35, 7, 0.8, 'fighter'));
 }
 
-function update() {
-    if(!isGame) return;
+function loop() {
     ctx.clearRect(0,0,W,H);
-    bricks.forEach(b => { ctx.fillStyle = '#8d4925'; ctx.fillRect(b.x, b.y, 25, 15); ctx.strokeRect(b.x, b.y, 25, 15); });
-    tanks.forEach(drawTank);
-    requestAnimationFrame(update);
+    // Дороги
+    ctx.fillStyle = 'rgba(0,0,0,0.1)'; ctx.fillRect(0, H-150, W, 40); ctx.fillRect(0, H-70, W, 50);
+
+    planes.forEach(p => { p.update(); p.draw(); });
+    vehicles.forEach(v => { v.update(); v.draw(); });
+
+    bombs.forEach((b, i) => {
+        b.y += b.vy; b.vy += 0.15;
+        ctx.fillStyle = '#111'; ctx.beginPath(); ctx.arc(b.x, b.y, 5, 0, 7); ctx.fill();
+        if(b.y > H - 50) { 
+            playSnd(80, 'sawtooth', 0.2, 0.1); bombs.splice(i, 1); 
+        }
+    });
+
+    fx.forEach((p, i) => {
+        ctx.strokeStyle = '#fff700'; ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(p.x + p.vx, p.y + p.vy); ctx.stroke();
+        p.x += p.vx; p.y += p.vy; p.l--;
+        if(p.l <= 0) fx.splice(i,1);
+    });
+
+    requestAnimationFrame(loop);
 }
 
-// Эмуляция огня для теста
-window.addEventListener('touchstart', (e) => { if(isGame) tanks[0].flash = 8; });
+function initAudio() {
+    if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    alert("Игра начинается!");
+}
+
+window.addEventListener('resize', resize);
+resize();
+loop();
 </script>
 </body>
 </html>
