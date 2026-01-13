@@ -1,264 +1,237 @@
 <!DOCTYPE html>
-<html>
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Б Р О Н Е Т А Н К.И.</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>БРОНЕТАНКИ</title>
     <style>
-        body { margin: 0; padding: 0; background: #000; overflow: hidden; touch-action: none; font-family: 'Courier New', monospace; -webkit-user-select: none; user-select: none; }
-        canvas { display: block; background: #1a1a1a; width: 100vw; height: 100vh; position: absolute; top: 0; left: 0; z-index: 1; }
-        #menu-bg { position: fixed; inset: 0; z-index: 2; background: #000; }
-        #menu { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 3; display: flex; flex-direction: column; justify-content: center; align-items: center; color: white; }
-        .menu-content { display: flex; flex-direction: column; align-items: center; z-index: 4; pointer-events: auto; }
-        .menu-title { font-size: clamp(24px, 8vw, 60px); margin-bottom: 40px; color: #ffeb3b; letter-spacing: 8px; text-shadow: 4px 4px 0 #bf360c; font-weight: 900; }
-        .mode-btn { padding: 18px; font-size: 22px; border: 3px solid #777; border-radius: 8px; background: #333; color: white; cursor: pointer; width: 320px; margin-bottom: 20px; font-weight: bold; }
-        .mode-btn.active { background: #388e3c; border-color: #aeea00; }
-        .start-btn { padding: 25px 60px; font-size: 30px; background: #d32f2f; color: white; border: none; cursor: pointer; margin-top: 20px; font-weight: 900; border-radius: 10px; box-shadow: 0 5px 0 #b71c1c; }
-        .back-to-menu-btn { position: fixed; top: 50%; left: 15px; transform: translateY(-50%) rotate(-90deg); padding: 10px 20px; background: rgba(0,0,0,0.7); color: #fff; border: 2px solid #555; border-radius: 5px; z-index: 2500; display: none; }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { margin: 0; padding: 0; background: #000; overflow: hidden; touch-action: none; font-family: sans-serif; }
+        canvas { display: block; position: absolute; inset: 0; z-index: 1; }
         
-        .score { position: absolute; width: 100px; text-align: center; font-size: 28px; font-weight: 900; z-index: 100; color: #fff; pointer-events: none; text-shadow: 2px 2px 0 #000; }
-        #score2 { top: 109px; left: 50%; transform: translateX(-50%) rotate(180deg); color: #ff5252; } 
-        #score1 { bottom: 136px; left: 50%; transform: translateX(-50%); color: #69f0ae; }
-        
-        .controls-layer { position: fixed; inset: 0; pointer-events: none; z-index: 2000; }
-        .joy-zone, .btn-fire { position: absolute; border-radius: 50%; pointer-events: auto; background: rgba(255,255,255,0.1); border: 2px solid rgba(255,255,255,0.2); }
-        .stick { position: absolute; width: 60px; height: 60px; border-radius: 50%; top: 50px; left: 50px; background: rgba(255,255,255,0.3); pointer-events: none; }
-        #p1-joy { left: 40px; bottom: 40px; width: 160px; height: 160px; }
-        #p1-fire { right: 40px; bottom: 40px; width: 130px; height: 130px; color: #4caf50; display: flex; align-items: center; justify-content: center; font-weight: 900; }
-        #p2-joy { right: 40px; top: 40px; width: 160px; height: 160px; }
-        #p2-fire { left: 40px; top: 40px; width: 130px; height: 130px; color: #f44336; display: flex; align-items: center; justify-content: center; font-weight: 900; transform: rotate(180deg); }
+        #ui-layer { position: fixed; inset: 0; z-index: 10; pointer-events: none; }
+        .score { position: absolute; width: 100%; text-align: center; font-family: monospace; font-size: 30px; font-weight: 900; color: #fff; text-shadow: 2px 2px 0 #000; }
+        #score-top { top: 108px; transform: rotate(180deg); color: #ff5252; }
+        #score-bot { bottom: 135px; color: #69f0ae; }
+
+        #menu { position: fixed; inset: 0; z-index: 100; background: #111; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .m-btn { pointer-events: auto; width: 280px; padding: 20px; margin: 10px; font-size: 20px; font-weight: bold; color: #fff; background: #333; border: 4px solid #555; border-radius: 12px; cursor: pointer; }
+        .m-btn.active { background: #2e7d32; border-color: #4caf50; }
+        .start-btn { background: #c62828; border-color: #ff5252; font-size: 28px; margin-top: 30px; height: 80px; }
+
+        .ctrl { position: absolute; pointer-events: auto; border-radius: 50%; border: 2px solid rgba(255,255,255,0.2); background: rgba(255,255,255,0.1); }
+        .joy { width: 160px; height: 160px; }
+        .fire { width: 120px; height: 120px; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 900; }
+        .stick { position: absolute; width: 60px; height: 60px; background: rgba(255,255,255,0.3); border-radius: 50%; top: 50px; left: 50px; pointer-events: none; }
+
+        #exit-btn { position: fixed; top: 10px; left: 10px; z-index: 200; padding: 10px; background: rgba(0,0,0,0.5); color: #fff; border: 1px solid #fff; display: none; }
     </style>
 </head>
 <body>
-    <canvas id="menu-bg"></canvas>
-    <div id="menu">
-        <div class="menu-content">
-            <h1 class="menu-title">Б Р О Н Е Т А Н К.И.</h1>
-            <button class="mode-btn active" id="btn-pvp">ИГРОК VS ИГРОК</button>
-            <button class="mode-btn" id="btn-pve">ИГРОК VS БОТ</button>
-            <div style="color: #ffeb3b; font-weight: bold; margin-bottom: 20px;">ДЛЯ НИКИТЫ</div>
-            <button class="start-btn" id="start-game">В БОЙ!</button>
-        </div>
-    </div>
-    <button id="exit-to-menu" class="back-to-menu-btn">ВЫХОД</button>
-    <div id="score2" class="score">0</div>
-    <div id="score1" class="score">0</div>
-    <canvas id="gameCanvas"></canvas>
-    <div class="controls-layer" id="p1-controls" style="display: none;"><div id="p1-joy" class="joy-zone"><div class="stick"></div></div><div id="p1-fire" class="btn-fire">ОГОНЬ</div></div>
-    <div class="controls-layer" id="p2-controls" style="display: none;"><div id="p2-joy" class="joy-zone"><div class="stick"></div></div><div id="p2-fire" class="btn-fire">ОГОНЬ</div></div>
+
+<canvas id="gameCanvas"></canvas>
+
+<div id="menu">
+    <h1 style="color: #ffcc00; font-size: 40px; margin-bottom: 40px;">БРОНЕТАНКИ</h1>
+    <button class="m-btn active" id="mode-pvp">ИГРОК VS ИГРОК</button>
+    <button class="m-btn" id="mode-pve">ИГРОК VS БОТ</button>
+    <button class="m-btn start-btn" id="start-game">В БОЙ!</button>
+</div>
+
+<div id="ui-layer" style="display: none;">
+    <div id="score-top" class="score">0</div>
+    <div id="score-bot" class="score">0</div>
+    
+    <div id="p1-joy" class="ctrl joy" style="left: 30px; bottom: 30px;"><div class="stick"></div></div>
+    <div id="p1-fire" class="ctrl fire" style="right: 30px; bottom: 30px;">ОГОНЬ</div>
+
+    <div id="p2-joy" class="ctrl joy" style="right: 30px; top: 30px;"><div class="stick"></div></div>
+    <div id="p2-fire" class="ctrl fire" style="left: 30px; top: 30px; transform: rotate(180deg);">ОГОНЬ</div>
+</div>
+
+<button id="exit-btn">МЕНЮ</button>
 
 <script>
-// --- CONFIG & STATE ---
-const CONFIG = { TANK: { SPEED: 3.5, HP: 3, COOLDOWN: 280 }, BULLET: { SPEED: 14 } };
-let tanks = [], bullets = [], bricks = [], explosions = [], sosSquad = [], isGameActive = false, gameMode = 'pvp';
-const canvas = document.getElementById('gameCanvas');
-const ctx = canvas.getContext('2d');
-const bgCanvas = document.getElementById('menu-bg');
-const bgCtx = bgCanvas.getContext('2d');
+const cvs = document.getElementById('gameCanvas');
+const ctx = cvs.getContext('2d');
+let W, H, isGame = false, gameMode = 'pvp';
 
-// --- AUDIO ---
-const AudioEngine = {
-    ctx: null,
-    init() { if(!this.ctx) this.ctx = new (window.AudioContext || window.webkitAudioContext)(); },
-    playMarch() {
-        if(!this.ctx) return;
-        const o = this.ctx.createOscillator(); const g = this.ctx.createGain();
-        o.type = 'square'; o.frequency.setValueAtTime(50, this.ctx.currentTime);
-        g.gain.setValueAtTime(0.1, this.ctx.currentTime);
-        g.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.1);
-        o.connect(g); g.connect(this.ctx.destination); o.start(); o.stop(this.ctx.currentTime + 0.1);
-    }
-};
+const CONFIG = { speed: 3.5, bulletSpeed: 14, cooldown: 300 };
+let tanks = [], bullets = [], bricks = [], explosions = [], sosSquad = [];
 
-// --- MENU BG ---
-let bgObjects = { tanks: [], planes: [] };
-function initMenuBg() {
-    bgCanvas.width = window.innerWidth; bgCanvas.height = window.innerHeight;
-    bgObjects.tanks = Array(6).fill(0).map(() => ({
-        x: Math.random()*bgCanvas.width, y: bgCanvas.height*0.5 + Math.random()*bgCanvas.height*0.4, 
-        s: 1.5 + Math.random()*2, color: '#4caf50'
-    }));
-}
-function drawMenuBg() {
-    bgCtx.fillStyle = '#050505'; bgCtx.fillRect(0,0,bgCanvas.width, bgCanvas.height);
-    bgObjects.tanks.forEach(t => {
-        t.x += t.s; if(t.x > bgCanvas.width + 100) t.x = -100;
-        bgCtx.fillStyle = t.color; bgCtx.fillRect(t.x, t.y, 60, 25);
-        bgCtx.fillStyle = '#000'; bgCtx.fillRect(t.x, t.y+20, 60, 5);
-    });
-    if(!isGameActive) requestAnimationFrame(drawMenuBg);
-}
-
-// --- GAME OBJECTS ---
+// --- КЛАСС ТАНКА ---
 class Tank {
     constructor(id, color, isBottom, isAI = false) {
         this.id = id; this.color = color; this.isBottom = isBottom; this.isAI = isAI;
-        this.score = 0; this.sosBuffer = []; this.reset();
+        this.score = 0; this.sosBuf = []; this.reset();
     }
     reset() {
-        this.x = canvas.width / 2; this.y = this.isBottom ? canvas.height - 80 : 80;
+        this.x = W/2; this.y = this.isBottom ? H-80 : 80;
         this.angle = this.isBottom ? -Math.PI/2 : Math.PI/2;
-        this.hp = CONFIG.TANK.HP; this.dx = 0; this.dy = 0; this.lastShot = 0;
-        this.isExploding = false; this.explosionTimer = 0; this.flash = 0; this.isSOS = false;
+        this.hp = 3; this.dx = 0; this.dy = 0; this.lastShot = 0;
+        this.isDead = false; this.deadTimer = 0; this.flash = 0; this.isSOS = false;
     }
 }
 
-function createBricks() {
-    bricks = []; const cx = canvas.width / 2;
-    const addW = (x, y, w, h) => { for(let i=0; i<w; i++) for(let j=0; j<h; j++) bricks.push({x: x+i*26, y: y+j*16, w: 25, h: 15}); };
-    addW(cx-78, 105, 6, 2); addW(cx-78, 73, 1, 2); addW(cx+52, 73, 1, 2); // Top
-    addW(cx-78, canvas.height-150, 6, 2); addW(cx-78, canvas.height-118, 1, 2); addW(cx+52, canvas.height-118, 1, 2); // Bot
-}
-
-function shoot(t) {
-    if (t.isExploding || Date.now() - t.lastShot < CONFIG.TANK.COOLDOWN) return;
-    bullets.push({ x: t.x+Math.cos(t.angle)*45, y: t.y+Math.sin(t.angle)*45, angle: t.angle, ownerId: t.id, isSOS: t.isSOS });
-    t.flash = 6; t.lastShot = Date.now();
-}
-
-function drawTank(t) {
-    ctx.save(); ctx.translate(t.x, t.y); ctx.rotate(t.angle);
-    if(t.isExploding) ctx.globalAlpha = Math.random();
-    ctx.fillStyle = '#444'; [-20, 10].forEach(y => ctx.fillRect(-24, y, 48, 10)); // Tracks
-    ctx.fillStyle = t.color; ctx.strokeStyle = '#000'; ctx.lineWidth = 1.5;
-    ctx.beginPath(); ctx.roundRect(-22, -16, 44, 32, 4); ctx.fill(); ctx.stroke(); // Hull
-    ctx.beginPath(); ctx.arc(-2, 0, 14, 0, Math.PI*2); ctx.fill(); ctx.stroke(); // Turret
-    ctx.fillStyle = '#111'; ctx.fillRect(10, -3, 28, 6); ctx.fillRect(35, -5, 8, 10); // Cannon
-    if(t.flash > 0) {
-        ctx.fillStyle = 'rgba(255,255,200,0.8)'; ctx.beginPath(); ctx.arc(45,0,20,0,Math.PI*2); ctx.fill(); t.flash--;
-    }
-    ctx.restore();
-}
-
-function update() {
-    if (!isGameActive) return;
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    bricks.forEach(b => { ctx.fillStyle = '#8d4925'; ctx.fillRect(b.x, b.y, b.w, b.h); ctx.strokeRect(b.x, b.y, b.w, b.h); });
-
-    tanks.concat(sosSquad).forEach(t => {
-        if(t.isExploding) { t.explosionTimer++; if(t.explosionTimer > 60) t.reset(); }
-        else {
-            if(t.isAI || t.isSOS) {
-                let target = tanks[t.id===0?1:0]; let a = Math.atan2(target.y-t.y, target.x-t.x); t.angle = a;
-                if(Math.hypot(target.x-t.x, target.y-t.y)>200){ t.dx=Math.cos(a); t.dy=Math.sin(a); } else { t.dx=0; t.dy=0; if(Math.random()<0.03) shoot(t); }
-            }
-            let nx = t.x + t.dx*CONFIG.TANK.SPEED, ny = t.y + t.dy*CONFIG.TANK.SPEED;
-            if(!checkCol(nx, t.y, 22)) t.x = nx; if(!checkCol(t.x, ny, 22)) t.y = ny;
-        }
-        drawTank(t);
-    });
-
-    bullets.forEach((b, bi) => {
-        b.x += Math.cos(b.angle)*CONFIG.BULLET.SPEED; b.y += Math.sin(b.angle)*CONFIG.BULLET.SPEED;
-        ctx.fillStyle = '#ffeb3b'; ctx.beginPath(); ctx.arc(b.x, b.y, 4, 0, Math.PI*2); ctx.fill();
-        let hitT = tanks.find(t => !t.isExploding && b.ownerId !== t.id && Math.hypot(b.x-t.x, b.y-t.y) < 25);
-        let col = checkCol(b.x, b.y, 5);
-        if(hitT) {
-            hitT.hp--; explosions.push({x: b.x, y: b.y, life: 8, r: 25, a: 0.6});
-            if(hitT.hp <= 0) { hitT.isExploding = true; if(!b.isSOS) tanks[b.ownerId].score++; }
-            bullets.splice(bi, 1);
-        } else if(col) {
-            explosions.push({x: b.x, y: b.y, life: 6, r: 22, a: 0.7});
-            bullets.splice(bi, 1);
-        }
-    });
-
-    explosions.forEach((e, i) => {
-        ctx.save(); ctx.fillStyle = `rgba(255,100,0,${e.a})`; ctx.beginPath();
-        ctx.ellipse(e.x, e.y, e.r*1.6, e.r*0.6, 0, 0, Math.PI*2); ctx.fill(); ctx.restore();
-        e.life--; if(e.life <= 0) explosions.splice(i, 1);
-    });
-    
-    document.getElementById('score1').innerText = tanks[0].score;
-    document.getElementById('score2').innerText = tanks[1].score;
-    requestAnimationFrame(update);
-}
-
-function checkCol(x, y, r) {
-    if (x < r || x > canvas.width - r || y < r || y > canvas.height - r) return true;
-    for (let b of bricks) if (x+r > b.x && x-r < b.x+b.w && y+r > b.y && y-r < b.y+b.h) return true;
-    return false;
-}
-
-// --- УПРАВЛЕНИЕ (FIXED) ---
-const touchData = new Map();
-const setupControls = () => {
-    const handleTouch = (e) => {
-        if(!isGameActive) return; e.preventDefault();
+// --- УПРАВЛЕНИЕ ---
+const touches = {};
+function setupInput() {
+    const handle = (e) => {
+        if(!isGame) return; e.preventDefault();
+        const rect = cvs.getBoundingClientRect();
         for(let t of e.changedTouches) {
-            const joy = [document.getElementById('p1-joy'), document.getElementById('p2-joy')].find(el => {
-                let r = el.getBoundingClientRect(); return t.clientX > r.left && t.clientX < r.right && t.clientY > r.top && t.clientY < r.bottom;
-            });
-            const fire = [document.getElementById('p1-fire'), document.getElementById('p2-fire')].find(el => {
-                let r = el.getBoundingClientRect(); return t.clientX > r.left && t.clientX < r.right && t.clientY > r.top && t.clientY < r.bottom;
-            });
-
-            if(joy) {
-                const idx = joy.id === 'p1-joy' ? 0 : 1;
-                touchData.set(t.identifier, {type: 'joy', idx, el: joy});
-            } else if(fire) {
-                const idx = fire.id === 'p1-fire' ? 0 : 1;
-                shoot(tanks[idx]);
-                touchData.set(t.identifier, {type: 'fire', idx, start: Date.now()});
+            const x = t.clientX, y = t.clientY;
+            if(e.type === 'touchstart' || e.type === 'touchmove') {
+                // Определение зон
+                checkZone(t.identifier, x, y);
+            }
+            if(e.type === 'touchend') {
+                const data = touches[t.identifier];
+                if(data && data.type === 'fire') {
+                    const tk = tanks[data.idx];
+                    const dur = Date.now() - data.ts;
+                    tk.sosBuf.push(dur > 250 ? '-' : '.');
+                    if(tk.sosBuf.length > 9) tk.sosBuf.shift();
+                    if(tk.sosBuf.join('').includes('...---...')) { spawnSOS(data.idx); tk.sosBuf = []; }
+                }
+                if(data && data.type === 'joy') {
+                    tanks[data.idx].dx = 0; tanks[data.idx].dy = 0;
+                    document.querySelectorAll('.stick')[data.idx === 0 ? 0 : 1].style.transform = `none`;
+                }
+                delete touches[t.identifier];
             }
         }
     };
 
-    window.addEventListener('touchstart', (e) => { AudioEngine.init(); handleTouch(e); }, {passive: false});
-    window.addEventListener('touchmove', (e) => {
-        if(!isGameActive) return; e.preventDefault();
-        for(let t of e.changedTouches) {
-            let data = touchData.get(t.identifier);
-            if(data && data.type === 'joy') {
-                let r = data.el.getBoundingClientRect();
-                let dx = (t.clientX - (r.left + 80))/80, dy = (t.clientY - (r.top + 80))/80;
-                let d = Math.min(1, Math.hypot(dx, dy)), a = Math.atan2(dy, dx);
-                tanks[data.idx].dx = Math.cos(a)*d; tanks[data.idx].dy = Math.sin(a)*d; tanks[data.idx].angle = a;
-                data.el.querySelector('.stick').style.transform = `translate(${Math.cos(a)*d*45}px,${Math.sin(a)*d*45}px)`;
-            }
-        }
-    }, {passive: false});
-
-    window.addEventListener('touchend', (e) => {
-        for(let t of e.changedTouches) {
-            let data = touchData.get(t.identifier);
-            if(data) {
-                if(data.type === 'joy') { tanks[data.idx].dx = 0; tanks[data.idx].dy = 0; data.el.querySelector('.stick').style.transform = 'none'; }
-                if(data.type === 'fire') {
-                    let dur = Date.now() - data.start; let tk = tanks[data.idx];
-                    tk.sosBuffer.push(dur > 220 ? '-' : '.'); if(tk.sosBuffer.length > 9) tk.sosBuffer.shift();
-                    if(tk.sosBuffer.join('').includes('...---...')) { triggerSOS(data.idx); tk.sosBuffer = []; }
+    function checkZone(id, x, y) {
+        const zones = [
+            {id: 'p1-joy', type: 'joy', idx: 0}, {id: 'p1-fire', type: 'fire', idx: 0},
+            {id: 'p2-joy', type: 'joy', idx: 1}, {id: 'p2-fire', type: 'fire', idx: 1}
+        ];
+        zones.forEach(z => {
+            const el = document.getElementById(z.id);
+            if(el.style.display === 'none') return;
+            const r = el.getBoundingClientRect();
+            if(x > r.left && x < r.right && y > r.top && y < r.bottom) {
+                if(z.type === 'joy') {
+                    const cx = r.left + 80, cy = r.top + 80;
+                    const dx = (x - cx)/80, dy = (y - cy)/80;
+                    const dist = Math.min(1, Math.hypot(dx, dy));
+                    const ang = Math.atan2(dy, dx);
+                    tanks[z.idx].dx = Math.cos(ang) * dist;
+                    tanks[z.idx].dy = Math.sin(ang) * dist;
+                    tanks[z.idx].angle = ang;
+                    el.querySelector('.stick').style.transform = `translate(${Math.cos(ang)*dist*40}px, ${Math.sin(ang)*dist*40}px)`;
+                    touches[id] = {type: 'joy', idx: z.idx};
+                } else {
+                    if(!touches[id]) { shoot(tanks[z.idx]); touches[id] = {type: 'fire', idx: z.idx, ts: Date.now()}; }
                 }
-                touchData.delete(t.identifier);
             }
-        }
-    });
-};
+        });
+    }
 
-function triggerSOS(idx) {
+    window.addEventListener('touchstart', handle, {passive: false});
+    window.addEventListener('touchmove', handle, {passive: false});
+    window.addEventListener('touchend', handle, {passive: false});
+}
+
+// --- ИГРОВАЯ ЛОГИКА ---
+function shoot(t) {
+    if(t.isDead || Date.now() - t.lastShot < CONFIG.cooldown) return;
+    bullets.push({x: t.x + Math.cos(t.angle)*45, y: t.y + Math.sin(t.angle)*45, a: t.angle, owner: t.id});
+    t.flash = 5; t.lastShot = Date.now();
+}
+
+function spawnSOS(idx) {
     const owner = tanks[idx];
     for(let i=0; i<5; i++) {
         let s = new Tank(idx, owner.color, false, true);
-        s.x = Math.random()*canvas.width; s.y = owner.isBottom ? canvas.height+100 : -100;
+        s.x = Math.random()*W; s.y = owner.isBottom ? H+100 : -100;
         s.isSOS = true; sosSquad.push(s);
     }
 }
 
-// --- MENU LOGIC ---
-document.getElementById('start-game').onclick = () => {
-    canvas.width = window.innerWidth; canvas.height = window.innerHeight;
-    tanks = [new Tank(0, '#2e7d32', true), new Tank(1, '#c62828', false, gameMode === 'pve')];
-    createBricks(); isGameActive = true;
-    document.getElementById('menu').style.display = 'none';
-    document.getElementById('p1-controls').style.display = 'block';
-    document.getElementById('p2-controls').style.display = (gameMode === 'pve' ? 'none' : 'block');
-    document.getElementById('exit-to-menu').style.display = 'block'; update();
-};
-document.getElementById('btn-pvp').onclick = () => { gameMode = 'pvp'; document.getElementById('btn-pvp').className = 'mode-btn active'; document.getElementById('btn-pve').className = 'mode-btn'; };
-document.getElementById('btn-pve').onclick = () => { gameMode = 'pve'; document.getElementById('btn-pve').className = 'mode-btn active'; document.getElementById('btn-pvp').className = 'mode-btn'; };
-document.getElementById('exit-to-menu').onclick = () => location.reload();
+function initBricks() {
+    bricks = [];
+    const addRect = (x, y, w, h) => { for(let i=0; i<w; i++) for(let j=0; j<h; j++) bricks.push({x: x+i*26, y: y+j*16}); };
+    const cx = W/2 - 78;
+    addRect(cx, 105, 6, 2); addRect(cx, 73, 1, 2); addRect(cx+130, 73, 1, 2); // Top U
+    addRect(cx, H-150, 6, 2); addRect(cx, H-118, 1, 2); addRect(cx+130, H-118, 1, 2); // Bot U
+}
 
-initMenuBg(); drawMenuBg(); setupControls();
+function draw() {
+    if(!isGame) return;
+    ctx.fillStyle = '#1a1a1a'; ctx.fillRect(0,0,W,H);
+    
+    // Bricks
+    ctx.fillStyle = '#8d4925'; bricks.forEach(b => { ctx.fillRect(b.x, b.y, 25, 15); ctx.strokeRect(b.x, b.y, 25, 15); });
+
+    // Tanks
+    tanks.concat(sosSquad).forEach(t => {
+        if(t.isDead) { t.deadTimer++; if(t.deadTimer > 60) t.reset(); }
+        else {
+            if(t.isAI || t.isSOS) {
+                let tar = tanks[t.id===0?1:0]; let a = Math.atan2(tar.y-t.y, tar.x-t.x); t.angle = a;
+                if(Math.hypot(tar.x-t.x, tar.y-t.y)>200){ t.dx=Math.cos(a); t.dy=Math.sin(a); } else { t.dx=0; t.dy=0; if(Math.random()<0.03) shoot(t); }
+            }
+            let nx = t.x + t.dx*CONFIG.speed, ny = t.y + t.dy*CONFIG.speed;
+            if(!colCheck(nx, t.y, 22)) t.x = nx; if(!colCheck(t.x, ny, 22)) t.y = ny;
+        }
+        ctx.save(); ctx.translate(t.x, t.y); ctx.rotate(t.angle);
+        if(t.isDead) ctx.globalAlpha = Math.random();
+        ctx.fillStyle = '#444'; ctx.fillRect(-24,-20,48,10); ctx.fillRect(-24,10,48,10); // Tracks
+        ctx.fillStyle = t.color; ctx.beginPath(); ctx.roundRect(-22,-16,44,32,4); ctx.fill(); ctx.stroke();
+        ctx.beginPath(); ctx.arc(-2,0,14,0,Math.PI*2); ctx.fill(); ctx.stroke(); // Turret
+        ctx.fillStyle = '#000'; ctx.fillRect(12,-3,28,6);
+        if(t.flash > 0) { ctx.fillStyle = '#ff0'; ctx.beginPath(); ctx.arc(45,0,15,0,Math.PI*2); ctx.fill(); t.flash--; }
+        ctx.restore();
+    });
+
+    // Bullets & Explosions
+    bullets.forEach((b, i) => {
+        b.x += Math.cos(b.a)*CONFIG.bulletSpeed; b.y += Math.sin(b.a)*CONFIG.bulletSpeed;
+        ctx.fillStyle = '#ff0'; ctx.beginPath(); ctx.arc(b.x, b.y, 4, 0, Math.PI*2); ctx.fill();
+        let hit = tanks.find(tk => !tk.isDead && b.owner !== tk.id && Math.hypot(b.x-tk.x, b.y-tk.y) < 25);
+        if(hit) { hit.hp--; explosions.push({x: b.x, y: b.y, l: 10}); if(hit.hp<=0){ hit.isDead=true; if(b.owner===0||b.owner===1) tanks[b.owner].score++; } bullets.splice(i,1); }
+        else if(colCheck(b.x, b.y, 5)) { explosions.push({x: b.x, y: b.y, l: 10}); bullets.splice(i,1); }
+    });
+
+    explosions.forEach((e, i) => {
+        ctx.fillStyle = `rgba(255,100,0,${e.l/10})`; ctx.beginPath();
+        ctx.ellipse(e.x, e.y, 30, 10, 0, 0, Math.PI*2); ctx.fill();
+        e.l--; if(e.l<=0) explosions.splice(i,1);
+    });
+
+    document.getElementById('score-bot').innerText = tanks[0].score;
+    document.getElementById('score-top').innerText = tanks[1].score;
+    requestAnimationFrame(draw);
+}
+
+function colCheck(x, y, r) {
+    if(x<r || x>W-r || y<r || y>H-r) return true;
+    return bricks.some(b => x+r > b.x && x-r < b.x+25 && y+r > b.y && y-r < b.y+15);
+}
+
+// --- СТАРТ ---
+document.getElementById('start-game').onclick = () => {
+    W = cvs.width = window.innerWidth; H = cvs.height = window.innerHeight;
+    tanks = [new Tank(0, '#2e7d32', true), new Tank(1, '#c62828', false, gameMode==='pve')];
+    initBricks();
+    document.getElementById('menu').style.display = 'none';
+    document.getElementById('ui-layer').style.display = 'block';
+    document.getElementById('exit-btn').style.display = 'block';
+    document.getElementById('p2-controls').style.display = gameMode==='pve' ? 'none' : 'block'; // не реализовано в селекторах, но логика ясна
+    // Для бота скрываем джойстик и кнопку сверху
+    document.getElementById('p2-joy').style.display = gameMode==='pve' ? 'none' : 'block';
+    document.getElementById('p2-fire').style.display = gameMode==='pve' ? 'none' : 'block';
+    isGame = true; draw();
+};
+
+document.getElementById('mode-pvp').onclick = () => { gameMode='pvp'; document.getElementById('mode-pvp').className='m-btn active'; document.getElementById('mode-pve').className='m-btn'; };
+document.getElementById('mode-pve').onclick = () => { gameMode='pve'; document.getElementById('mode-pve').className='m-btn active'; document.getElementById('mode-pvp').className='m-btn'; };
+document.getElementById('exit-btn').onclick = () => location.reload();
+
+setupInput();
 </script>
 </body>
 </html>
