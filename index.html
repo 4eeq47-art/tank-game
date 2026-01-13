@@ -2,8 +2,8 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ТАНКИ ГЕН-6: FRONT LINE</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>ТАНКИ: ГЕНЕРАЦИЯ 7.1</title>
     <style>
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body { margin: 0; background: #333; overflow: hidden; touch-action: none; font-family: 'Courier New', monospace; }
@@ -11,24 +11,24 @@
         #bgCanvas { z-index: 1; }
         #gameCanvas { z-index: 5; display: none; background: #444; }
         
-        #menu { position: fixed; inset: 0; z-index: 100; display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(255,255,255,0.25); }
-        .m-card { background: #fdfdfd; padding: 25px; border: 5px solid #222; border-radius: 12px; text-align: center; width: 320px; box-shadow: 0 10px 40px rgba(0,0,0,0.6); }
-        .btn { width: 100%; padding: 15px; margin: 8px 0; font-size: 18px; font-weight: 900; color: #fff; background: #333; border: 3px solid #000; cursor: pointer; border-radius: 6px; }
+        #menu { position: fixed; inset: 0; z-index: 100; display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(255,255,255,0.2); }
+        .m-card { background: #eee; padding: 25px; border: 4px solid #222; border-radius: 10px; text-align: center; width: 300px; }
+        .btn { width: 100%; padding: 14px; margin: 6px 0; font-size: 18px; font-weight: 900; color: #fff; background: #444; border: 3px solid #000; cursor: pointer; }
         .btn.active { background: #2e7d32; border-color: #aeea00; }
-        .start { background: #b71c1c; font-size: 26px; height: 80px; margin-top: 15px; }
+        .start { background: #c62828; font-size: 24px; height: 70px; margin-top: 10px; }
         
         #ui { position: fixed; inset: 0; z-index: 10; pointer-events: none; display: none; }
-        .score { position: absolute; width: 100%; text-align: center; font-size: 24px; font-weight: bold; color: #fff; }
+        .score { position: absolute; width: 100%; text-align: center; font-size: 24px; font-weight: bold; color: #fff; text-shadow: 1px 1px 2px #000; }
         #score2 { top: 120px; transform: rotate(180deg); }
         #score1 { bottom: 140px; }
         
-        .ctrl { position: absolute; pointer-events: auto; border-radius: 50%; border: 3px solid rgba(0,0,0,0.4); }
-        .joy { width: 160px; height: 160px; background: rgba(255,255,255,0.15); }
-        .fire { width: 120px; height: 120px; display: flex; align-items: center; justify-content: center; font-weight: 900; color: #fff; background: rgba(0,0,0,0.5); border: 4px solid #fff; }
-        .stick { position: absolute; width: 60px; height: 60px; border-radius: 50%; top: 47px; left: 47px; pointer-events: none; }
+        .ctrl { position: absolute; pointer-events: auto; border-radius: 50%; border: 3px solid rgba(0,0,0,0.3); }
+        .joy { width: 150px; height: 150px; background: rgba(255,255,255,0.1); }
+        .fire { width: 110px; height: 110px; display: flex; align-items: center; justify-content: center; font-weight: 900; color: #fff; background: rgba(0,0,0,0.4); font-size: 16px; }
+        .stick { position: absolute; width: 50px; height: 50px; border-radius: 50%; top: 47px; left: 47px; pointer-events: none; }
         
-        #exit-btn { position: fixed; right: 10px; top: 50%; transform: translateY(-50%) rotate(90deg); z-index: 200; padding: 12px 25px; background: #222; color: #fff; border: 2px solid #fff; font-weight: bold; display: none; cursor: pointer; }
-        #gen-num { position: absolute; top: 15px; left: 15px; color: #000; font-size: 16px; font-weight: 900; }
+        #exit-btn { position: fixed; right: 10px; top: 50%; transform: translateY(-50%) rotate(90deg); z-index: 200; padding: 10px 20px; background: #222; color: #fff; border: 2px solid #fff; font-weight: bold; display: none; cursor: pointer; pointer-events: auto; }
+        #gen-num { position: absolute; top: 10px; left: 10px; color: #000; font-size: 12px; opacity: 0.5; }
     </style>
 </head>
 <body>
@@ -37,9 +37,9 @@
 <canvas id="gameCanvas"></canvas>
 
 <div id="menu">
-    <div id="gen-num">GENERATION: 6</div>
+    <div id="gen-num">GEN: 7.1</div>
     <div class="m-card">
-        <h1 style="color: #222; margin: 0 0 20px 0; font-size: 32px;">БРОНЕТАНКИ</h1>
+        <h1 style="color: #222; margin: 0 0 15px 0;">БРОНЕТАНКИ</h1>
         <button class="btn active" id="pvp-btn">ИГРОК VS ИГРОК</button>
         <button class="btn" id="pve-btn">ИГРОК VS БОТ</button>
         <button class="btn start" id="start-btn">В БОЙ!</button>
@@ -50,9 +50,9 @@
     <div id="score2" class="score">0</div>
     <div id="score1" class="score">0</div>
     <div id="p1-joy" class="ctrl joy" style="left:30px; bottom:30px;"><div class="stick" style="background: #2e7d32;"></div></div>
-    <div id="p1-fire" class="ctrl fire" style="right:30px; bottom:30px; background: rgba(46,125,50,0.7);">ОГОНЬ</div>
+    <div id="p1-fire" class="ctrl fire" style="right:30px; bottom:30px; background: rgba(46,125,50,0.6);">ОГОНЬ</div>
     <div id="p2-joy" class="ctrl joy" style="right:30px; top:30px;"><div class="stick" style="background: #c62828;"></div></div>
-    <div id="p2-fire" class="ctrl fire" style="left:30px; top:30px; transform: rotate(180deg); background: rgba(198,40,40,0.7);">ОГОНЬ</div>
+    <div id="p2-fire" class="ctrl fire" style="left:30px; top:30px; transform: rotate(180deg); background: rgba(198,40,40,0.6);">ОГОНЬ</div>
 </div>
 
 <button id="exit-btn">В МЕНЮ</button>
@@ -63,7 +63,6 @@ const bctx = bgCvs.getContext('2d'), gctx = gCvs.getContext('2d');
 let W, H, isGame = false, gameMode = 'pvp', audioCtx = null;
 let tanks = [], bullets = [], bricks = [], explosions = [];
 
-// --- SOUND ENGINE ---
 function playSnd(f, t, d, v, s) {
     if(!audioCtx) return;
     const o = audioCtx.createOscillator(), g = audioCtx.createGain();
@@ -75,7 +74,6 @@ function playSnd(f, t, d, v, s) {
     o.start(); o.stop(audioCtx.currentTime + d);
 }
 
-// --- TANK CLASS ---
 class Tank {
     constructor(id, color, isBot, isBottom) {
         this.id = id; this.color = color; this.isBot = isBot; this.isBottom = isBottom;
@@ -91,26 +89,41 @@ class Tank {
 
 function drawTank(ctx, t) {
     ctx.save(); ctx.translate(t.x, t.y);
-    ctx.fillStyle = '#000'; ctx.fillRect(t.isBottom?35:-40, -20, 6, 40);
+    ctx.fillStyle = '#000'; ctx.fillRect(t.isBottom?38:-44, -20, 6, 40);
     ctx.fillStyle = t.id===0?'#69f0ae':'#ff5252';
-    ctx.fillRect(t.isBottom?35:-40, -20 + (40*(1-t.hp/3)), 6, 40*(t.hp/3));
+    ctx.fillRect(t.isBottom?38:-44, -20 + (40*(1-t.hp/3)), 6, 40*(t.hp/3));
+
     ctx.rotate(t.angle);
     if(t.dead) ctx.globalAlpha = 0.2;
-    ctx.fillStyle = '#111'; ctx.fillRect(-26,-20,52,10); ctx.fillRect(-26,10,52,10);
+    // Траки
+    ctx.fillStyle = '#111'; ctx.fillRect(-28,-22,56,12); ctx.fillRect(-28,10,56,12);
+    // Корпус
     ctx.fillStyle = t.color; ctx.strokeStyle = '#000'; ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.roundRect(-22,-16,44,32,4); ctx.fill(); ctx.stroke();
-    ctx.beginPath(); ctx.arc(-2,0,15,0,7); ctx.fill(); ctx.stroke();
-    ctx.fillStyle = '#111'; ctx.fillRect(12,-4,32,8); 
-    ctx.fillStyle = t.color; ctx.fillRect(40,-8,10,16); ctx.strokeRect(40,-8,10,16);
-    if(t.flash > 0) { ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(60, 0, 25, 0, 7); ctx.fill(); t.flash--; }
+    ctx.beginPath(); ctx.roundRect(-24,-18,48,36,4); ctx.fill(); ctx.stroke();
+    // Люк
+    ctx.beginPath(); ctx.arc(-5,0,8,0,7); ctx.stroke();
+    // Башня
+    ctx.beginPath(); ctx.arc(0,0,16,0,7); ctx.fill(); ctx.stroke();
+    // Дуло
+    ctx.fillStyle = '#111'; ctx.fillRect(14,-4,35,8); 
+    ctx.fillStyle = t.color; ctx.fillRect(45,-10,12,20); ctx.strokeRect(45,-10,12,20);
+    
+    // Вспышка выстрела
+    if(t.flash > 0) {
+        let grad = ctx.createRadialGradient(65, 0, 0, 65, 0, 30);
+        grad.addColorStop(0, 'rgba(255,255,255,0.9)');
+        grad.addColorStop(1, 'rgba(255,200,0,0)');
+        ctx.fillStyle = grad;
+        ctx.beginPath(); ctx.arc(65, 0, 30, 0, 7); ctx.fill();
+        t.flash--;
+    }
     ctx.restore();
 }
 
-// --- AI BRAIN ---
 function runAI(t) {
     const tar = tanks[0];
     if(t.rev > 0) { t.dx = -Math.cos(t.angle); t.dy = -Math.sin(t.angle); t.angle += 0.05; t.rev--; return; }
-    if(col(t.x + Math.cos(t.angle)*40, t.y + Math.sin(t.angle)*40, 22)) { t.rev = 40; }
+    if(col(t.x + Math.cos(t.angle)*45, t.y + Math.sin(t.angle)*45, 24)) { t.rev = 40; }
     else {
         t.angle = Math.atan2(tar.y - t.y, tar.x - t.x);
         t.dx = Math.cos(t.angle); t.dy = Math.sin(t.angle);
@@ -126,16 +139,11 @@ function loop() {
     if(!isGame) {
         bctx.fillStyle = '#eee'; bctx.fillRect(0,0,W,H);
         mT += 0.01;
-        // Самолеты и бомбы (четкая прорисовка)
         for(let i=0; i<2; i++) {
             let px = (mT*150 + i*600) % (W+400) - 200;
-            bctx.fillStyle = '#444'; 
-            bctx.fillRect(px, 120+i*150, 70, 15); // Корпус
-            bctx.fillRect(px+25, 100+i*150, 15, 60); // Крылья
-            if(Math.floor(px)%400 === 0) {
-                playSnd(900, 'sine', 1.3, 0.03, 150); // Свист
-                explosions.push({x: px, y: H*0.8, l: 20}); 
-            }
+            bctx.fillStyle = '#444'; bctx.fillRect(px, 120+i*150, 70, 15);
+            bctx.fillRect(px+25, 100+i*150, 15, 60);
+            if(Math.floor(px)%400 === 0) { playSnd(900, 'sine', 1.3, 0.03, 150); explosions.push({x: px, y: H*0.8, l: 20}); }
         }
     } else {
         gctx.fillStyle = '#444'; gctx.fillRect(0,0,W,H);
@@ -146,7 +154,7 @@ function loop() {
             else {
                 if(t.isBot) runAI(t);
                 let nx = t.x + t.dx*3.8, ny = t.y + t.dy*3.8;
-                if(!col(nx, t.y, 22)) t.x = nx; if(!col(t.x, ny, 22)) t.y = ny;
+                if(!col(nx, t.y, 24)) t.x = nx; if(!col(t.x, ny, 24)) t.y = ny;
             }
             drawTank(gctx, t);
         });
@@ -155,14 +163,19 @@ function loop() {
             b.x += Math.cos(b.a)*16; b.y += Math.sin(b.a)*16;
             gctx.fillStyle = '#fff'; gctx.beginPath(); gctx.arc(b.x, b.y, 5, 0, 7); gctx.fill();
             let hit = tanks.find(tk => !tk.dead && b.owner !== tk.id && Math.hypot(b.x-tk.x, b.y-tk.y) < 25);
-            if(hit) { hit.hp--; explosions.push({x:b.x, y:b.y, l:15}); if(hit.hp<=0){ hit.dead=true; tanks[b.owner].score++; } bullets.splice(i,1); }
-            else if(col(b.x, b.y, 5)) { explosions.push({x:b.x, y:b.y, l:10}); bullets.splice(i,1); }
+            if(hit) { hit.hp--; explosions.push({x:b.x, y:b.y, l:20}); if(hit.hp<=0){ hit.dead=true; tanks[b.owner].score++; } bullets.splice(i,1); }
+            else if(col(b.x, b.y, 5)) { explosions.push({x:b.x, y:b.y, l:15}); bullets.splice(i,1); }
         });
     }
 
     explosions.forEach((e, i) => {
-        let c = isGame ? gctx : bctx;
-        c.fillStyle = `rgba(255,255,255,${e.l/20})`; c.beginPath(); c.arc(e.x, e.y, 40-e.l, 0, 7); c.fill();
+        let ctx = isGame ? gctx : bctx;
+        let grad = ctx.createRadialGradient(e.x, e.y, 0, e.x, e.y, 45-e.l);
+        grad.addColorStop(0, `rgba(255,255,255,${e.l/15})`);
+        grad.addColorStop(0.5, `rgba(255,160,0,${e.l/25})`);
+        grad.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.fillStyle = grad;
+        ctx.beginPath(); ctx.arc(e.x, e.y, 55-e.l, 0, 7); ctx.fill();
         e.l--; if(e.l<=0) explosions.splice(i, 1);
     });
 
@@ -175,8 +188,8 @@ function loop() {
 
 function shoot(t) {
     if(t.dead || Date.now() - t.lastS < 300) return;
-    bullets.push({x: t.x + Math.cos(t.angle)*50, y: t.y + Math.sin(t.angle)*50, a: t.angle, owner: t.id});
-    t.flash = 6; t.lastS = Date.now();
+    bullets.push({x: t.x + Math.cos(t.angle)*55, y: t.y + Math.sin(t.angle)*55, a: t.angle, owner: t.id});
+    t.flash = 8; t.lastS = Date.now();
     playSnd(150, 'sawtooth', 0.1, 0.1);
 }
 
@@ -185,8 +198,7 @@ function col(x, y, r) {
     return bricks.some(b => x+r > b.x && x-r < b.x+25 && y+r > b.y && y-r < b.y+15);
 }
 
-// --- INPUT HANDLING ---
-const activeTouches = {};
+const touchMap = {};
 function setupInp() {
     const handle = (e) => {
         if(!isGame) return;
@@ -197,7 +209,7 @@ function setupInp() {
                     const r = document.getElementById(id).getBoundingClientRect();
                     const cx = r.left + r.width/2, cy = r.top + r.height/2;
                     if(Math.hypot(x-cx, y-cy) < 130) {
-                        activeTouches[t.identifier] = i;
+                        touchMap[t.identifier] = i;
                         let dx = (x-cx)/(r.width/2), dy = (y-cy)/(r.height/2);
                         let a = Math.atan2(dy, dx), d = Math.min(1, Math.hypot(dx, dy));
                         tanks[i].dx = Math.cos(a)*d; tanks[i].dy = Math.sin(a)*d; tanks[i].angle = a;
@@ -210,11 +222,11 @@ function setupInp() {
                 });
             }
             if(e.type === 'touchend') {
-                let idx = activeTouches[t.identifier];
+                let idx = touchMap[t.identifier];
                 if(idx !== undefined) {
                     tanks[idx].dx = 0; tanks[idx].dy = 0;
                     document.querySelectorAll('.stick')[idx].style.transform = 'none';
-                    delete activeTouches[t.identifier];
+                    delete touchMap[t.identifier];
                 }
             }
         }
@@ -234,16 +246,9 @@ document.getElementById('start-btn').onclick = () => {
     bricks = []; let cx = W/2 - 75;
     const r = (x,y,w,h) => { for(let i=0; i<w; i++) for(let j=0; j<h; j++) bricks.push({x:x+i*26, y:y+j*16}); };
     
-    // ПЕРЕВЕРНУТЫЕ УКРЫТИЯ (ЗАЩИТА ДУЛА)
-    // Верхнее: Перекладина снизу (между игроками), ножки вверх
-    r(cx, 250, 6, 1); // Перекладина
-    r(cx, 200, 1, 4); // Ножка левая
-    r(cx+130, 200, 1, 4); // Ножка правая
-
-    // Нижнее: Перекладина сверху (между игроками), ножки вниз
-    r(cx, H-266, 6, 1); // Перекладина
-    r(cx, H-250, 1, 4); // Ножка левая
-    r(cx+130, H-250, 1, 4); // Ножка правая
+    // УКРЫТИЯ ИЗ ГЕН-6 (ЗАЩИТА ДУЛА)
+    r(cx, 250, 6, 1); r(cx, 200, 1, 4); r(cx+130, 200, 1, 4); // Верх
+    r(cx, H-266, 6, 1); r(cx, H-250, 1, 4); r(cx+130, H-250, 1, 4); // Низ
 };
 
 document.getElementById('pvp-btn').onclick = () => { gameMode='pvp'; document.getElementById('pvp-btn').className='btn active'; document.getElementById('pve-btn').className='btn'; };
