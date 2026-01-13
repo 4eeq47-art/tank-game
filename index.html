@@ -3,259 +3,186 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>ТАНКИ: ГЕНЕРАЦИЯ 7.1</title>
+    <title>БРОНЕТАНКИ: ГЕНЕРАЦИЯ 10</title>
     <style>
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body { margin: 0; background: #333; overflow: hidden; touch-action: none; font-family: 'Courier New', monospace; }
         canvas { display: block; position: absolute; inset: 0; }
-        #bgCanvas { z-index: 1; }
         #gameCanvas { z-index: 5; display: none; background: #444; }
         
-        #menu { position: fixed; inset: 0; z-index: 100; display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(255,255,255,0.2); }
-        .m-card { background: #eee; padding: 25px; border: 4px solid #222; border-radius: 10px; text-align: center; width: 300px; }
-        .btn { width: 100%; padding: 14px; margin: 6px 0; font-size: 18px; font-weight: 900; color: #fff; background: #444; border: 3px solid #000; cursor: pointer; }
-        .btn.active { background: #2e7d32; border-color: #aeea00; }
-        .start { background: #c62828; font-size: 24px; height: 70px; margin-top: 10px; }
-        
+        /* Главное меню */
+        #menu { position: fixed; inset: 0; z-index: 100; display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(0,0,0,0.8); }
+        .m-card { background: #eee; padding: 25px; border: 5px solid #000; border-radius: 15px; text-align: center; width: 340px; box-shadow: 0 0 30px rgba(0,0,0,0.5); }
+        .btn { width: 100%; padding: 15px; margin: 8px 0; font-size: 18px; font-weight: 900; cursor: pointer; border: 3px solid #000; border-radius: 10px; text-transform: uppercase; }
+        .btn-start { background: #c62828; color: #fff; font-size: 24px; }
+        .btn-dev { background: #ff9800; color: #000; font-size: 14px; }
+        .btn-mode { background: #444; color: #fff; }
+        .btn-mode.active { background: #2e7d32; border-color: #aeea00; }
+
+        /* Панель разработчика (выплывающая) */
+        #dev-overlay { display: none; position: fixed; inset: 0; z-index: 110; background: #222; color: #fff; padding: 20px; overflow-y: auto; }
+        .dev-title { color: #ff9800; text-align: center; border-bottom: 2px solid #444; padding-bottom: 10px; }
+        .dev-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 15px 0; }
+        .dev-opt { padding: 12px; background: #333; border: 1px solid #555; text-align: center; font-size: 11px; cursor: pointer; border-radius: 5px; }
+        .dev-opt.active { background: #2e7d32; border-color: #fff; font-weight: bold; }
+
         #ui { position: fixed; inset: 0; z-index: 10; pointer-events: none; display: none; }
-        .score { position: absolute; width: 100%; text-align: center; font-size: 24px; font-weight: bold; color: #fff; text-shadow: 1px 1px 2px #000; }
-        #score2 { top: 120px; transform: rotate(180deg); }
-        #score1 { bottom: 140px; }
-        
-        .ctrl { position: absolute; pointer-events: auto; border-radius: 50%; border: 3px solid rgba(0,0,0,0.3); }
-        .joy { width: 150px; height: 150px; background: rgba(255,255,255,0.1); }
-        .fire { width: 110px; height: 110px; display: flex; align-items: center; justify-content: center; font-weight: 900; color: #fff; background: rgba(0,0,0,0.4); font-size: 16px; }
-        .stick { position: absolute; width: 50px; height: 50px; border-radius: 50%; top: 47px; left: 47px; pointer-events: none; }
-        
-        #exit-btn { position: fixed; right: 10px; top: 50%; transform: translateY(-50%) rotate(90deg); z-index: 200; padding: 10px 20px; background: #222; color: #fff; border: 2px solid #fff; font-weight: bold; display: none; cursor: pointer; pointer-events: auto; }
-        #gen-num { position: absolute; top: 10px; left: 10px; color: #000; font-size: 12px; opacity: 0.5; }
+        .score { position: absolute; width: 100%; text-align: center; font-weight: 900; color: #fff; font-size: 24px; }
+        #exit-btn { position: fixed; right: 10px; top: 50%; transform: translateY(-50%) rotate(90deg); z-index: 200; padding: 10px 20px; background: #000; color: #fff; border: 2px solid #fff; font-weight: bold; display: none; }
+        #gen-num { position: absolute; top: 15px; left: 15px; color: #fff; opacity: 0.7; font-size: 14px; }
     </style>
 </head>
 <body>
 
-<canvas id="bgCanvas"></canvas>
 <canvas id="gameCanvas"></canvas>
 
 <div id="menu">
-    <div id="gen-num">GEN: 7.1</div>
+    <div id="gen-num">ГЕНЕРАЦИЯ: 10</div>
     <div class="m-card">
-        <h1 style="color: #222; margin: 0 0 15px 0;">БРОНЕТАНКИ</h1>
-        <button class="btn active" id="pvp-btn">ИГРОК VS ИГРОК</button>
-        <button class="btn" id="pve-btn">ИГРОК VS БОТ</button>
-        <button class="btn start" id="start-btn">В БОЙ!</button>
+        <h1 style="margin: 0 0 20px 0; color: #222;">БРОНЕТАНКИ</h1>
+        
+        <button class="btn btn-mode active" id="pvp-btn" onclick="setMode('pvp')">ИГРОК VS ИГРОК</button>
+        <button class="btn btn-mode" id="pve-btn" onclick="setMode('pve')">ИГРОК VS БОТ</button>
+        
+        <button class="btn btn-start" onclick="startGame()">В БОЙ!</button>
+        
+        <button class="btn btn-dev" onclick="toggleDev(true)">Настройки (DEV MODE)</button>
     </div>
+</div>
+
+<div id="dev-overlay">
+    <h2 class="dev-title">АРХИВ ГЕНЕРАЦИЙ</h2>
+    
+    <p>МОДЕЛЬ ТАНКА:</p>
+    <div class="dev-grid" id="tank-opts">
+        <div class="dev-opt" onclick="setCfg('tank','alpha')">ALPHA (КВАДРАТ)</div>
+        <div class="dev-opt" onclick="setCfg('tank','beta')">BETA (+HP)</div>
+        <div class="dev-opt active" onclick="setCfg('tank','final')">FINAL (+ВСПЫШКА)</div>
+    </div>
+
+    <p>ТИП УКРЫТИЙ:</p>
+    <div class="dev-grid" id="wall-opts">
+        <div class="dev-opt" onclick="setCfg('wall','walls')">ПЕРВЫЕ СТЕНЫ</div>
+        <div class="dev-opt" onclick="setCfg('wall','back')">ГЕН 4 (ТЫЛ)</div>
+        <div class="dev-opt active" onclick="setCfg('wall','front')">ГЕН 6 (ДУЛО)</div>
+        <div class="dev-opt" onclick="setCfg('wall','bastion')">ГЕН 7 (БАСТИОН)</div>
+    </div>
+
+    <p>СТИЛЬ ИНТЕРФЕЙСА:</p>
+    <div class="dev-grid" id="ui-opts">
+        <div class="dev-opt" onclick="setCfg('ui','corner')">УГЛОВОЙ (OLD)</div>
+        <div class="dev-opt active" onclick="setCfg('ui','center')">ЦЕНТР (NEW)</div>
+    </div>
+
+    <button class="btn btn-start" onclick="toggleDev(false)">ПРИМЕНИТЬ</button>
 </div>
 
 <div id="ui">
     <div id="score2" class="score">0</div>
     <div id="score1" class="score">0</div>
-    <div id="p1-joy" class="ctrl joy" style="left:30px; bottom:30px;"><div class="stick" style="background: #2e7d32;"></div></div>
-    <div id="p1-fire" class="ctrl fire" style="right:30px; bottom:30px; background: rgba(46,125,50,0.6);">ОГОНЬ</div>
-    <div id="p2-joy" class="ctrl joy" style="right:30px; top:30px;"><div class="stick" style="background: #c62828;"></div></div>
-    <div id="p2-fire" class="ctrl fire" style="left:30px; top:30px; transform: rotate(180deg); background: rgba(198,40,40,0.6);">ОГОНЬ</div>
 </div>
 
-<button id="exit-btn">В МЕНЮ</button>
+<button id="exit-btn" onclick="location.reload()">В МЕНЮ</button>
 
 <script>
-const bgCvs = document.getElementById('bgCanvas'), gCvs = document.getElementById('gameCanvas');
-const bctx = bgCvs.getContext('2d'), gctx = gCvs.getContext('2d');
-let W, H, isGame = false, gameMode = 'pvp', audioCtx = null;
-let tanks = [], bullets = [], bricks = [], explosions = [];
+let cfg = { tank: 'final', wall: 'front', ui: 'center', mode: 'pvp' };
+const canvas = document.getElementById('gameCanvas'), ctx = canvas.getContext('2d');
+let W, H, isGame = false, tanks = [], bricks = [];
 
-function playSnd(f, t, d, v, s) {
-    if(!audioCtx) return;
-    const o = audioCtx.createOscillator(), g = audioCtx.createGain();
-    o.type = t; o.frequency.setValueAtTime(f, audioCtx.currentTime);
-    if(s) o.frequency.exponentialRampToValueAtTime(s, audioCtx.currentTime + d);
-    g.gain.setValueAtTime(v, audioCtx.currentTime);
-    g.gain.linearRampToValueAtTime(0, audioCtx.currentTime + d);
-    o.connect(g); g.connect(audioCtx.destination);
-    o.start(); o.stop(audioCtx.currentTime + d);
+function setMode(m) {
+    cfg.mode = m;
+    document.getElementById('pvp-btn').classList.toggle('active', m === 'pvp');
+    document.getElementById('pve-btn').classList.toggle('active', m === 'pve');
 }
 
-class Tank {
-    constructor(id, color, isBot, isBottom) {
-        this.id = id; this.color = color; this.isBot = isBot; this.isBottom = isBottom;
-        this.score = 0; this.reset();
-    }
-    reset() {
-        this.x = W/2; this.y = this.isBottom ? H-120 : 120;
-        this.angle = this.isBottom ? -Math.PI/2 : Math.PI/2;
-        this.hp = 3; this.dx = 0; this.dy = 0; this.flash = 0; this.dead = false; this.deadT = 0;
-        this.lastS = 0; this.rev = 0;
-    }
+function toggleDev(show) {
+    document.getElementById('dev-overlay').style.display = show ? 'block' : 'none';
 }
 
-function drawTank(ctx, t) {
+function setCfg(type, val) {
+    cfg[type] = val;
+    const btns = document.querySelectorAll(`#${type}-opts .dev-opt`);
+    btns.forEach(b => b.classList.remove('active'));
+    event.target.classList.add('active');
+}
+
+function drawTank(t) {
     ctx.save(); ctx.translate(t.x, t.y);
-    ctx.fillStyle = '#000'; ctx.fillRect(t.isBottom?38:-44, -20, 6, 40);
-    ctx.fillStyle = t.id===0?'#69f0ae':'#ff5252';
-    ctx.fillRect(t.isBottom?38:-44, -20 + (40*(1-t.hp/3)), 6, 40*(t.hp/3));
+    
+    // HP (кроме Alpha)
+    if(cfg.tank !== 'alpha') {
+        ctx.fillStyle = '#000'; ctx.fillRect(t.isBottom?40:-45, -20, 5, 40);
+        ctx.fillStyle = t.id===0?'#69f0ae':'#ff5252';
+        ctx.fillRect(t.isBottom?40:-45, -20 + (40*(1-t.hp/3)), 5, 40*(t.hp/3));
+    }
 
     ctx.rotate(t.angle);
-    if(t.dead) ctx.globalAlpha = 0.2;
-    // Траки
-    ctx.fillStyle = '#111'; ctx.fillRect(-28,-22,56,12); ctx.fillRect(-28,10,56,12);
-    // Корпус
-    ctx.fillStyle = t.color; ctx.strokeStyle = '#000'; ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.roundRect(-24,-18,48,36,4); ctx.fill(); ctx.stroke();
-    // Люк
-    ctx.beginPath(); ctx.arc(-5,0,8,0,7); ctx.stroke();
-    // Башня
-    ctx.beginPath(); ctx.arc(0,0,16,0,7); ctx.fill(); ctx.stroke();
-    // Дуло
-    ctx.fillStyle = '#111'; ctx.fillRect(14,-4,35,8); 
-    ctx.fillStyle = t.color; ctx.fillRect(45,-10,12,20); ctx.strokeRect(45,-10,12,20);
     
-    // Вспышка выстрела
-    if(t.flash > 0) {
-        let grad = ctx.createRadialGradient(65, 0, 0, 65, 0, 30);
-        grad.addColorStop(0, 'rgba(255,255,255,0.9)');
-        grad.addColorStop(1, 'rgba(255,200,0,0)');
-        ctx.fillStyle = grad;
-        ctx.beginPath(); ctx.arc(65, 0, 30, 0, 7); ctx.fill();
-        t.flash--;
+    if(cfg.tank === 'final') {
+        ctx.fillStyle = '#111'; ctx.fillRect(-28,-22,56,12); ctx.fillRect(-28,10,56,12);
+        ctx.fillStyle = t.color; ctx.strokeStyle = '#000'; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.roundRect(-24,-18,48,36,4); ctx.fill(); ctx.stroke();
+        ctx.beginPath(); ctx.arc(0,0,16,0,7); ctx.fill(); ctx.stroke();
+        ctx.fillStyle = '#111'; ctx.fillRect(14,-4,35,8);
+        if(t.flash > 0) {
+            let g = ctx.createRadialGradient(60, 0, 0, 60, 0, 25);
+            g.addColorStop(0, '#fff'); g.addColorStop(1, 'transparent');
+            ctx.fillStyle = g; ctx.beginPath(); ctx.arc(60,0,25,0,7); ctx.fill();
+            t.flash--;
+        }
+    } else {
+        ctx.fillStyle = t.color; ctx.fillRect(-20,-20,40,40);
+        ctx.fillStyle = '#000'; ctx.fillRect(10,-5,25,10);
     }
     ctx.restore();
 }
 
-function runAI(t) {
-    const tar = tanks[0];
-    if(t.rev > 0) { t.dx = -Math.cos(t.angle); t.dy = -Math.sin(t.angle); t.angle += 0.05; t.rev--; return; }
-    if(col(t.x + Math.cos(t.angle)*45, t.y + Math.sin(t.angle)*45, 24)) { t.rev = 40; }
-    else {
-        t.angle = Math.atan2(tar.y - t.y, tar.x - t.x);
-        t.dx = Math.cos(t.angle); t.dy = Math.sin(t.angle);
-        if(Math.random() < 0.03) shoot(t);
-    }
-}
-
-let mT = 0;
-function loop() {
-    W = window.innerWidth; H = window.innerHeight;
-    bgCvs.width = gCvs.width = W; bgCvs.height = gCvs.height = H;
-
-    if(!isGame) {
-        bctx.fillStyle = '#eee'; bctx.fillRect(0,0,W,H);
-        mT += 0.01;
-        for(let i=0; i<2; i++) {
-            let px = (mT*150 + i*600) % (W+400) - 200;
-            bctx.fillStyle = '#444'; bctx.fillRect(px, 120+i*150, 70, 15);
-            bctx.fillRect(px+25, 100+i*150, 15, 60);
-            if(Math.floor(px)%400 === 0) { playSnd(900, 'sine', 1.3, 0.03, 150); explosions.push({x: px, y: H*0.8, l: 20}); }
-        }
-    } else {
-        gctx.fillStyle = '#444'; gctx.fillRect(0,0,W,H);
-        bricks.forEach(b => { gctx.fillStyle = '#8d4925'; gctx.fillRect(b.x, b.y, 25, 15); gctx.strokeRect(b.x, b.y, 25, 15); });
-
-        tanks.forEach(t => {
-            if(t.dead) { t.deadT++; if(t.deadT > 100) t.reset(); }
-            else {
-                if(t.isBot) runAI(t);
-                let nx = t.x + t.dx*3.8, ny = t.y + t.dy*3.8;
-                if(!col(nx, t.y, 24)) t.x = nx; if(!col(t.x, ny, 24)) t.y = ny;
-            }
-            drawTank(gctx, t);
-        });
-
-        bullets.forEach((b, i) => {
-            b.x += Math.cos(b.a)*16; b.y += Math.sin(b.a)*16;
-            gctx.fillStyle = '#fff'; gctx.beginPath(); gctx.arc(b.x, b.y, 5, 0, 7); gctx.fill();
-            let hit = tanks.find(tk => !tk.dead && b.owner !== tk.id && Math.hypot(b.x-tk.x, b.y-tk.y) < 25);
-            if(hit) { hit.hp--; explosions.push({x:b.x, y:b.y, l:20}); if(hit.hp<=0){ hit.dead=true; tanks[b.owner].score++; } bullets.splice(i,1); }
-            else if(col(b.x, b.y, 5)) { explosions.push({x:b.x, y:b.y, l:15}); bullets.splice(i,1); }
-        });
-    }
-
-    explosions.forEach((e, i) => {
-        let ctx = isGame ? gctx : bctx;
-        let grad = ctx.createRadialGradient(e.x, e.y, 0, e.x, e.y, 45-e.l);
-        grad.addColorStop(0, `rgba(255,255,255,${e.l/15})`);
-        grad.addColorStop(0.5, `rgba(255,160,0,${e.l/25})`);
-        grad.addColorStop(1, 'rgba(0,0,0,0)');
-        ctx.fillStyle = grad;
-        ctx.beginPath(); ctx.arc(e.x, e.y, 55-e.l, 0, 7); ctx.fill();
-        e.l--; if(e.l<=0) explosions.splice(i, 1);
-    });
-
-    if(isGame) {
-        document.getElementById('score1').innerText = tanks[0].score;
-        document.getElementById('score2').innerText = tanks[1].score;
-    }
-    requestAnimationFrame(loop);
-}
-
-function shoot(t) {
-    if(t.dead || Date.now() - t.lastS < 300) return;
-    bullets.push({x: t.x + Math.cos(t.angle)*55, y: t.y + Math.sin(t.angle)*55, a: t.angle, owner: t.id});
-    t.flash = 8; t.lastS = Date.now();
-    playSnd(150, 'sawtooth', 0.1, 0.1);
-}
-
-function col(x, y, r) {
-    if(x<r || x>W-r || y<r || y>H-r) return true;
-    return bricks.some(b => x+r > b.x && x-r < b.x+25 && y+r > b.y && y-r < b.y+15);
-}
-
-const touchMap = {};
-function setupInp() {
-    const handle = (e) => {
-        if(!isGame) return;
-        for(let t of e.changedTouches) {
-            const x = t.clientX, y = t.clientY;
-            if(e.type === 'touchstart' || e.type === 'touchmove') {
-                ['p1-joy','p2-joy'].forEach((id, i) => {
-                    const r = document.getElementById(id).getBoundingClientRect();
-                    const cx = r.left + r.width/2, cy = r.top + r.height/2;
-                    if(Math.hypot(x-cx, y-cy) < 130) {
-                        touchMap[t.identifier] = i;
-                        let dx = (x-cx)/(r.width/2), dy = (y-cy)/(r.height/2);
-                        let a = Math.atan2(dy, dx), d = Math.min(1, Math.hypot(dx, dy));
-                        tanks[i].dx = Math.cos(a)*d; tanks[i].dy = Math.sin(a)*d; tanks[i].angle = a;
-                        document.getElementById(id).querySelector('.stick').style.transform = `translate(${dx*40}px, ${dy*40}px)`;
-                    }
-                });
-                ['p1-fire','p2-fire'].forEach((id, i) => {
-                    const r = document.getElementById(id).getBoundingClientRect();
-                    if(x>r.left && x<r.right && y>r.top && y<r.bottom && e.type==='touchstart') shoot(tanks[i]);
-                });
-            }
-            if(e.type === 'touchend') {
-                let idx = touchMap[t.identifier];
-                if(idx !== undefined) {
-                    tanks[idx].dx = 0; tanks[idx].dy = 0;
-                    document.querySelectorAll('.stick')[idx].style.transform = 'none';
-                    delete touchMap[t.identifier];
-                }
-            }
-        }
-    };
-    ['touchstart','touchmove','touchend'].forEach(n => window.addEventListener(n, handle, {passive:false}));
-}
-
-document.getElementById('start-btn').onclick = () => {
-    if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    isGame = true; gCvs.style.display = 'block';
-    document.getElementById('menu').style.display = 'none';
-    document.getElementById('ui').style.display = 'block';
-    document.getElementById('exit-btn').style.display = 'block';
-    tanks = [new Tank(0, '#2e7d32', false, true), new Tank(1, '#c62828', gameMode==='pve', false)];
-    if(gameMode==='pve') { document.getElementById('p2-joy').style.display='none'; document.getElementById('p2-fire').style.display='none'; }
-    
+function createWalls() {
     bricks = []; let cx = W/2 - 75;
     const r = (x,y,w,h) => { for(let i=0; i<w; i++) for(let j=0; j<h; j++) bricks.push({x:x+i*26, y:y+j*16}); };
     
-    // УКРЫТИЯ ИЗ ГЕН-6 (ЗАЩИТА ДУЛА)
-    r(cx, 250, 6, 1); r(cx, 200, 1, 4); r(cx+130, 200, 1, 4); // Верх
-    r(cx, H-266, 6, 1); r(cx, H-250, 1, 4); r(cx+130, H-250, 1, 4); // Низ
-};
+    switch(cfg.wall) {
+        case 'walls': r(60, H/2-60, 2, 8); r(W-110, H/2-60, 2, 8); break;
+        case 'back': r(cx, 150, 6, 1); r(cx, 100, 1, 4); r(cx+130, 100, 1, 4); break;
+        case 'front': r(cx, 250, 6, 1); r(cx, 200, 1, 4); r(cx+130, 200, 1, 4); break;
+        case 'bastion': r(cx, 250, 6, 2); r(cx, 200, 1, 4); r(cx+130, 200, 1, 4); break;
+    }
+}
 
-document.getElementById('pvp-btn').onclick = () => { gameMode='pvp'; document.getElementById('pvp-btn').className='btn active'; document.getElementById('pve-btn').className='btn'; };
-document.getElementById('pve-btn').onclick = () => { gameMode='pve'; document.getElementById('pve-btn').className='btn active'; document.getElementById('pvp-btn').className='btn'; };
-document.getElementById('exit-btn').onclick = () => location.reload();
+function startGame() {
+    W = window.innerWidth; H = window.innerHeight;
+    canvas.width = W; canvas.height = H;
+    document.getElementById('menu').style.display = 'none';
+    document.getElementById('ui').style.display = 'block';
+    document.getElementById('exit-btn').style.display = 'block';
+    canvas.style.display = 'block';
+    
+    tanks = [{x:W/2, y:H-100, angle:-Math.PI/2, color:'#2e7d32', hp:3, flash:0, id:0, isBottom:true}];
+    createWalls();
+    
+    const s1 = document.getElementById('score1'), s2 = document.getElementById('score2');
+    if(cfg.ui === 'center') {
+        s1.style.cssText = "bottom: 140px; font-size: 24px;";
+        s2.style.cssText = "top: 120px; font-size: 24px; transform: rotate(180deg);";
+    } else {
+        s1.style.cssText = "bottom: 20px; left: 20px; width: auto; font-size: 32px;";
+        s2.style.cssText = "top: 20px; right: 20px; width: auto; font-size: 32px;";
+    }
+    
+    isGame = true;
+    update();
+}
 
-loop(); setupInp();
+function update() {
+    if(!isGame) return;
+    ctx.clearRect(0,0,W,H);
+    bricks.forEach(b => { ctx.fillStyle = '#8d4925'; ctx.fillRect(b.x, b.y, 25, 15); ctx.strokeRect(b.x, b.y, 25, 15); });
+    tanks.forEach(drawTank);
+    requestAnimationFrame(update);
+}
+
+// Эмуляция огня для теста
+window.addEventListener('touchstart', (e) => { if(isGame) tanks[0].flash = 8; });
 </script>
 </body>
 </html>
