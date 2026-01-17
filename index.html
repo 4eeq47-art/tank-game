@@ -89,3 +89,98 @@ class Plane {
             let dive = Math.sin(this.timer);
             this.y = this.baseY + dive * 50;
             this.angle = dive * 0.3;
+            // Стрельба в нижней точке
+            if(dive > 0.8 && Math.random() < 0.2) {
+                bullets.push({x: this.x - 30, y: this.y + 10, vx: -15, vy: 10, l: 20});
+                playSnd(400, 'square', 0.05, 0.02);
+            }
+        }
+
+        if(this.type === 'bomber' && Math.floor(this.timer*10) % 50 === 0) {
+            bombs.push({x: this.x, y: this.y + 20, vy: 1});
+            playSnd(300, 'sine', 1.0, 0.03, 50);
+        }
+
+        if(this.x < -300) { this.x = W + 300; this.baseY = H * (0.1 + Math.random() * 0.35); }
+    }
+    draw() {
+        ctx.save(); ctx.translate(this.x, this.y); ctx.rotate(this.angle);
+        let s = (this.type === 'bomber') ? 1.2 : 0.8;
+        ctx.scale(s, s);
+
+        // Крылья
+        ctx.fillStyle = '#3e4a36';
+        ctx.beginPath(); ctx.ellipse(0, 0, 15, 60, 0, 0, 7); ctx.fill();
+        // Фюзеляж
+        ctx.fillStyle = '#4b5320'; ctx.strokeStyle = '#000';
+        ctx.beginPath(); ctx.ellipse(0, 5, 60, 15, 0, 0, 7); ctx.fill(); ctx.stroke();
+        // Кабина
+        ctx.fillStyle = 'rgba(135, 206, 235, 0.5)';
+        ctx.beginPath(); ctx.ellipse(20, 0, 15, 8, 0, 0, 7); ctx.fill();
+        ctx.restore();
+    }
+}
+
+function playSnd(f, t, d, v, s) {
+    if(!audioCtx) return;
+    try {
+        const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+        o.type = t; o.frequency.setValueAtTime(f, audioCtx.currentTime);
+        if(s) o.frequency.exponentialRampToValueAtTime(s, audioCtx.currentTime + d);
+        g.gain.setValueAtTime(v, audioCtx.currentTime);
+        g.gain.linearRampToValueAtTime(0, audioCtx.currentTime + d);
+        o.connect(g); g.connect(audioCtx.destination);
+        o.start(); o.stop(audioCtx.currentTime + d);
+    } catch(e){}
+}
+
+function resize() {
+    W = window.innerWidth; H = window.innerHeight;
+    canvas.width = W; canvas.height = H;
+    vehicles.length = 0; planes.length = 0;
+    vehicles.push(new Tank(H - 80, 2.2, 1.2, '#2e7d32'));
+    vehicles.push(new Tank(H - 160, 1.5, 0.85, '#4b5320'));
+    planes.push(new Plane(H * 0.2, 5, 'bomber'));
+    planes.push(new Plane(H * 0.4, 8, 'fighter'));
+}
+
+function loop() {
+    ctx.clearRect(0, 0, W, H);
+    
+    // Отрисовка облаков (просто пятна для атмосферы)
+    ctx.fillStyle = 'rgba(255,255,255,0.05)';
+    for(let i=0; i<5; i++) { ctx.beginPath(); ctx.arc((Date.now()*0.02 + i*300)%W, 100+i*50, 100, 0, 7); ctx.fill(); }
+
+    planes.forEach(p => { p.update(); p.draw(); });
+    vehicles.forEach(v => { v.update(); v.draw(); });
+
+    bombs.forEach((b, i) => {
+        b.y += b.vy; b.vy += 0.12;
+        ctx.fillStyle = '#000'; ctx.beginPath(); ctx.arc(b.x, b.y, 6, 0, 7); ctx.fill();
+        if(b.y > H - 40) { playSnd(60, 'sawtooth', 0.3, 0.05); bombs.splice(i,1); }
+    });
+
+    bullets.forEach((p, i) => {
+        ctx.strokeStyle = '#ffff00'; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(p.x + p.vx, p.y + p.vy); ctx.stroke();
+        p.x += p.vx; p.y += p.vy; p.l--;
+        if(p.l <= 0) bullets.splice(i, 1);
+    });
+
+    requestAnimationFrame(loop);
+}
+
+// Логика кнопок
+document.querySelectorAll('.btn-mode').forEach(btn => {
+    btn.onclick = () => {
+        document.querySelectorAll('.btn-mode').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    };
+});
+
+window.addEventListener('resize', resize);
+resize(); loop();
+</script>
+</body>
+</html>
