@@ -3,121 +3,105 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>ТАНКИ: СТАЛЬНАЯ ГРОЗА (ГЕН-15)</title>
+    <title>ТАНКИ: БАТАЛИЯ (ГЕН-16)</title>
     <style>
         body { margin: 0; background: #000; overflow: hidden; touch-action: none; font-family: 'Arial Black', sans-serif; }
-        canvas { display: block; background: linear-gradient(to bottom, #1a2a3a 0%, #050505 100%); }
-        #menu-ui {
-            position: fixed; inset: 0; z-index: 20;
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            background: rgba(0,0,0,0.5);
+        canvas { display: block; background: linear-gradient(to bottom, #141e30 0%, #000 100%); }
+        
+        /* Кнопка вызова меню */
+        #menu-toggle {
+            position: fixed; top: 20px; right: 20px; z-index: 100;
+            padding: 10px 20px; background: rgba(255,255,255,0.2); color: white;
+            border: 2px solid white; border-radius: 5px; cursor: pointer; pointer-events: auto;
         }
-        .m-card { background: rgba(220, 220, 220, 0.9); padding: 25px; border: 4px solid #333; border-radius: 12px; width: 310px; text-align: center; box-shadow: 0 0 20px #000; }
-        .btn { width: 100%; padding: 14px; margin: 8px 0; font-size: 16px; font-weight: 900; cursor: pointer; border: 3px solid #111; border-radius: 4px; text-transform: uppercase; transition: 0.1s; }
-        .btn-mode { background: #666; color: #fff; }
-        .btn-mode.active { background: #388e3c; border-color: #c8e6c9; color: #fff; }
-        .btn-start { background: #d32f2f; color: #fff; font-size: 24px; margin-top: 15px; box-shadow: 0 5px 0 #7b1f1f; }
-        .btn:active { transform: translateY(3px); box-shadow: none; }
+
+        /* Скрытое меню */
+        #menu-ui {
+            position: fixed; inset: 0; z-index: 150;
+            display: none; flex-direction: column; align-items: center; justify-content: center;
+            background: rgba(0,0,0,0.7);
+        }
+        .m-card { background: #ddd; padding: 20px; border-radius: 10px; width: 280px; text-align: center; }
+        .btn { width: 100%; padding: 12px; margin: 5px 0; font-weight: bold; cursor: pointer; text-transform: uppercase; }
+        .btn-start { background: #c62828; color: white; border: none; }
     </style>
 </head>
 <body>
 
-<canvas id="menuCanvas"></canvas>
+<canvas id="battleCanvas"></canvas>
+<button id="menu-toggle" onclick="toggleMenu()">МЕНЮ</button>
 
-<div id="menu-ui">
-    <div class="m-card">
-        <h1 style="margin: 0 0 20px 0; color: #111; letter-spacing: -1px;">ТАНКИ: ГРОЗА</h1>
-        <button class="btn btn-mode active" id="pvp">ИГРОК VS ИГРОК</button>
-        <button class="btn btn-mode" id="pve">ИГРОК VS БОТ</button>
-        <button class="btn btn-start" onclick="alert('Загрузка боя...')">В БОЙ!</button>
+<div id="menu-ui" onclick="toggleMenu()">
+    <div class="m-card" onclick="event.stopPropagation()">
+        <h2 style="margin:0 0 15px 0;">МЕНЮ</h2>
+        <button class="btn">1 VS 1</button>
+        <button class="btn">ПРОТИВ БОТА</button>
+        <button class="btn btn-start" onclick="toggleMenu()">ПРОДОЛЖИТЬ</button>
     </div>
 </div>
 
 <script>
-const canvas = document.getElementById('menuCanvas');
+const canvas = document.getElementById('battleCanvas');
 const ctx = canvas.getContext('2d');
 let W, H;
 
-const vehicles = [], planes = [], bombs = [], bullets = [], trails = [];
+const vehicles = [], planes = [], bombs = [], bullets = [], particles = [], explosions = [];
 
 class Plane {
-    constructor(y, speed, type) {
-        this.baseY = y; this.y = y; this.speed = speed; this.type = type;
-        this.x = W + 400; this.timer = Math.random() * 10;
+    constructor(y, speed, type, zIndex) {
+        this.y = y; this.speed = speed; this.type = type; this.zIndex = zIndex; // zIndex для масштаба взрывов
+        this.x = W + 500; this.timer = Math.random() * 10;
         this.angle = 0;
     }
     update() {
         this.x -= this.speed;
-        this.timer += 0.04;
-
-        // Дымный след (trail)
-        if (Math.random() > 0.3) {
-            trails.push({x: this.x + 40, y: this.y, r: 5, alpha: 0.6});
-        }
+        this.timer += 0.03;
 
         if(this.type === 'fighter') {
             let dive = Math.sin(this.timer);
-            this.y = this.baseY + dive * 60;
-            this.angle = dive * 0.35; // Наклон носа
-
-            // Стрельба очередью параллельно оси самолета
-            if(dive > 0.5 && Math.random() < 0.3) {
-                bullets.push({
-                    x: this.x - 30, 
-                    y: this.y + 10, 
-                    angle: this.angle, 
-                    v: 18, 
-                    life: 30
-                });
+            this.y += dive * 2;
+            this.angle = dive * 0.2;
+            // Выстрел из носа
+            if(dive > 0.6 && Math.random() < 0.2) {
+                bullets.push({x: this.x - 50, y: this.y + 5, angle: this.angle, v: 20, life: 40});
             }
-        } else {
-            if(Math.floor(this.timer*10) % 60 === 0) {
-                bombs.push({x: this.x, y: this.y + 20, vy: 1.5});
-            }
+        } else if(Math.floor(this.timer*10) % 80 === 0) {
+            bombs.push({x: this.x, y: this.y + 10, vy: 1, z: this.zIndex});
         }
 
-        if(this.x < -400) { this.x = W + 400; this.baseY = H * (0.1 + Math.random() * 0.4); }
+        if(this.x < -500) this.x = W + 500;
     }
     draw() {
         ctx.save();
         ctx.translate(this.x, this.y);
         ctx.rotate(this.angle);
-        
-        // Рисуем корпус (улучшенные очертания)
-        ctx.fillStyle = '#424935'; ctx.strokeStyle = '#000'; ctx.lineWidth = 1.5;
+        ctx.fillStyle = this.type === 'bomber' ? '#3d4432' : '#4b5320';
         ctx.beginPath();
-        if(this.type === 'bomber') {
-            ctx.moveTo(-70, 0); ctx.quadraticCurveTo(0, -25, 50, 0); ctx.lineTo(50, 15); ctx.lineTo(-70, 15);
-        } else {
-            ctx.moveTo(-50, 0); ctx.lineTo(40, 0); ctx.lineTo(55, 10); ctx.lineTo(-50, 10);
-        }
-        ctx.closePath(); ctx.fill(); ctx.stroke();
-        
-        // Крыло
-        ctx.fillStyle = '#343a2b';
-        ctx.beginPath(); ctx.ellipse(-5, 5, 10, 50, 0, 0, 7); ctx.fill(); ctx.stroke();
+        ctx.ellipse(0, 0, this.type === 'bomber'?60:40, this.type === 'bomber'?15:8, 0, 0, 7);
+        ctx.fill(); ctx.stroke();
+        // Крылья
+        ctx.fillRect(-10, -40, 20, 80);
         ctx.restore();
     }
 }
 
-class Tank {
-    constructor(y, speed, scale, color) {
-        this.y = y; this.speed = speed; this.scale = scale; this.color = color;
-        this.x = -200 - Math.random() * 400;
-        this.wAngle = 0;
-    }
-    update() {
-        this.x += this.speed; this.wAngle += this.speed * 0.2;
-        if(this.x > W + 200) this.x = -200;
+class Explosion {
+    constructor(x, y, scale) {
+        this.x = x; this.y = y; this.scale = scale;
+        this.life = 1.0;
     }
     draw() {
-        ctx.save(); ctx.translate(this.x, this.y); ctx.scale(this.scale, this.scale);
-        ctx.fillStyle = '#111'; ctx.beginPath(); ctx.roundRect(-42, 10, 84, 18, 4); ctx.fill();
-        ctx.fillStyle = this.color; ctx.strokeStyle = '#000'; ctx.lineWidth = 2;
-        ctx.beginPath(); ctx.roundRect(-40, -10, 80, 24, 4); ctx.fill(); ctx.stroke();
-        ctx.beginPath(); ctx.arc(0, -10, 18, Math.PI, 0); ctx.fill(); ctx.stroke();
-        ctx.fillStyle = '#000'; ctx.fillRect(10, -18, 45, 8);
+        ctx.save();
+        ctx.globalAlpha = this.life;
+        let r = (1 - this.life) * 50 * this.scale;
+        let grad = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, r);
+        grad.addColorStop(0, '#fff');
+        grad.addColorStop(0.3, '#ff9800');
+        grad.addColorStop(1, 'transparent');
+        ctx.fillStyle = grad;
+        ctx.beginPath(); ctx.arc(this.x, this.y, r, 0, 7); ctx.fill();
         ctx.restore();
+        this.life -= 0.04;
     }
 }
 
@@ -125,56 +109,58 @@ function resize() {
     W = window.innerWidth; H = window.innerHeight;
     canvas.width = W; canvas.height = H;
     vehicles.length = 0; planes.length = 0;
-    vehicles.push(new Tank(H - 80, 2, 1.2, '#2d5a27'));
-    vehicles.push(new Tank(H - 160, 1.4, 0.8, '#435a3d'));
-    planes.push(new Plane(H * 0.2, 4.5, 'bomber'));
-    planes.push(new Plane(H * 0.4, 7.5, 'fighter'));
+    // Танки на разном удалении
+    vehicles.push({x:100, y:H-60, s:1.2, speed:2, color:'#2e7d32'}); // Близко
+    vehicles.push({x:300, y:H-130, s:0.7, speed:1.2, color:'#435a3d'}); // Далеко
+    
+    planes.push(new Plane(H*0.2, 4, 'bomber', 0.6)); // Дальний самолет
+    planes.push(new Plane(H*0.4, 7, 'fighter', 1.0)); // Ближний
 }
 
 function loop() {
     ctx.clearRect(0,0,W,H);
-
-    // Отрисовка дыма
-    trails.forEach((t, i) => {
-        ctx.fillStyle = `rgba(150, 150, 150, ${t.alpha})`;
-        ctx.beginPath(); ctx.arc(t.x, t.y, t.r, 0, 7); ctx.fill();
-        t.x += 1; t.r += 0.2; t.alpha -= 0.01;
-        if(t.alpha <= 0) trails.splice(i, 1);
-    });
-
+    
+    // Рисуем технику
     planes.forEach(p => { p.update(); p.draw(); });
-    vehicles.forEach(v => { v.update(); v.draw(); });
-
-    // Очереди (параллельно оси самолета)
-    bullets.forEach((b, i) => {
-        ctx.strokeStyle = '#ffeb3b'; ctx.lineWidth = 3;
-        ctx.beginPath();
-        ctx.moveTo(b.x, b.y);
-        let tx = b.x - Math.cos(b.angle) * 30;
-        let ty = b.y - Math.sin(b.angle) * 30;
-        ctx.lineTo(tx, ty);
-        ctx.stroke();
-        b.x -= Math.cos(b.angle) * b.v;
-        b.y -= Math.sin(b.angle) * b.v;
-        b.life--;
-        if(b.life <= 0) bullets.splice(i, 1);
+    vehicles.forEach(v => {
+        v.x += v.speed; if(v.x > W+100) v.x = -100;
+        ctx.fillStyle = v.color;
+        ctx.fillRect(v.x-30*v.s, v.y, 60*v.s, 20*v.s);
+        ctx.beginPath(); ctx.arc(v.x, v.y, 15*v.s, Math.PI, 0); ctx.fill();
     });
 
+    // Пули
+    bullets.forEach((b, i) => {
+        ctx.strokeStyle = '#ff0'; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(b.x, b.y);
+        b.x -= Math.cos(b.angle) * b.v; b.y -= Math.sin(b.angle) * b.v;
+        ctx.lineTo(b.x, b.y); ctx.stroke();
+        if(b.life-- < 0) bullets.splice(i,1);
+    });
+
+    // Бомбы и взрывы
     bombs.forEach((b, i) => {
-        b.y += b.vy; b.vy += 0.15;
-        ctx.fillStyle = '#111'; ctx.beginPath(); ctx.arc(b.x, b.y, 6, 0, 7); ctx.fill();
-        if(b.y > H - 40) bombs.splice(i, 1);
+        b.y += b.vy; b.vy += 0.1;
+        ctx.fillStyle = '#000'; ctx.beginPath(); ctx.arc(b.x, b.y, 4, 0, 7); ctx.fill();
+        let groundY = b.z < 1.0 ? H-130 : H-60; // Разная высота земли для параллакса
+        if(b.y > groundY) {
+            explosions.push(new Explosion(b.x, b.y, b.z));
+            bombs.splice(i, 1);
+        }
+    });
+
+    explosions.forEach((ex, i) => {
+        ex.draw();
+        if(ex.life <= 0) explosions.splice(i, 1);
     });
 
     requestAnimationFrame(loop);
 }
 
-document.querySelectorAll('.btn-mode').forEach(btn => {
-    btn.onclick = () => {
-        document.querySelectorAll('.btn-mode').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-    };
-});
+function toggleMenu() {
+    const m = document.getElementById('menu-ui');
+    m.style.display = m.style.display === 'flex' ? 'none' : 'flex';
+}
 
 window.addEventListener('resize', resize);
 resize(); loop();
