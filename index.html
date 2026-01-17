@@ -3,46 +3,40 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ТАНКИ: БИБЛИОТЕКА (ГЕН-23)</title>
+    <title>ТАНКИ: БИБЛИОТЕКА ИСПРАВЛЕНА (ГЕН-24)</title>
     <style>
-        body { margin: 0; background: #050505; overflow: hidden; font-family: 'Courier New', monospace; }
+        body { margin: 0; background: #050505; overflow: hidden; font-family: 'Courier New', monospace; color: white; }
         canvas { display: block; background: linear-gradient(to bottom, #0d121d 0%, #000 100%); }
-        #gen-num { position: fixed; top: 10px; left: 10px; color: #fff; font-size: 14px; z-index: 10; font-weight: bold; }
-        
-        /* Кнопка и Библиотека */
+        #gen-num { position: fixed; top: 10px; left: 10px; font-size: 14px; z-index: 10; font-weight: bold; }
         #lib-btn { position: fixed; top: 10px; right: 10px; z-index: 100; padding: 5px 15px; background: #333; color: #fff; border: 1px solid #777; cursor: pointer; }
         #library-overlay { 
-            position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 200; 
-            display: none; padding: 20px; overflow-y: auto; color: #fff;
+            position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 200; 
+            display: none; padding: 20px; overflow-y: auto;
         }
-        .lib-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px; }
-        .lib-col { border: 1px solid #444; padding: 10px; }
-        .lib-item { background: #222; margin-bottom: 10px; padding: 10px; text-align: center; border: 1px dashed #555; }
-        .close-lib { float: right; cursor: pointer; color: red; font-weight: bold; }
+        .lib-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .lib-item { background: #111; padding: 15px; border: 1px solid #444; text-align: center; }
+        canvas.preview { background: #1a1a1a; border: 1px solid #333; margin-top: 10px; }
+        .close-lib { float: right; cursor: pointer; color: red; }
     </style>
 </head>
 <body>
 
-<div id="gen-num">ГЕНЕРАЦИЯ №23</div>
+<div id="gen-num">ГЕНЕРАЦИЯ №24</div>
 <button id="lib-btn" onclick="toggleLib()">БИБЛИОТЕКА</button>
 
 <div id="library-overlay">
     <span class="close-lib" onclick="toggleLib()">[ЗАКРЫТЬ]</span>
-    <h2>ВОЕННАЯ БИБЛИОТЕКА</h2>
+    <h2>ВОЕННАЯ БИБЛИОТЕКА ОБЪЕКТОВ</h2>
     <div class="lib-grid">
-        <div class="lib-col">
+        <div class="lib-item">
             <h3>САМОЛЕТЫ</h3>
-            <div class="lib-item">
-                <p>ГЕН-23: Ju-52 & Hs-129</p>
-                <div style="font-size: 10px; color: #888;">(Узкое крыло, вид снизу)</div>
-            </div>
+            <canvas id="planePreview" class="preview" width="200" height="100"></canvas>
+            <p>ГЕН-24: Штурмовая авиация</p>
         </div>
-        <div class="lib-col">
+        <div class="lib-item">
             <h3>ТАНКИ</h3>
-            <div class="lib-item">
-                <p>ГЕН-23: Основной боевой</p>
-                <div style="font-size: 10px; color: #888;">(Без обводки дула, катки активны)</div>
-            </div>
+            <canvas id="tankPreview" class="preview" width="200" height="100"></canvas>
+            <p>ГЕН-24: Тяжелая бронетехника</p>
         </div>
     </div>
 </div>
@@ -52,59 +46,46 @@
 <script>
 const canvas = document.getElementById('battleCanvas');
 const ctx = canvas.getContext('2d');
-let W, H, audioCtx;
+let W, H, audioCtx, marchInterval;
 
 const vehicles = [], planes = [], bombs = [], bullets = [], explosions = [], tankFlashes = [];
 
 function initAudio() { 
     if(!audioCtx) {
         audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if(audioCtx.state === 'suspended') audioCtx.resume();
         startMarch(); 
     }
 }
 
 function startMarch() {
-    setInterval(() => {
+    if(marchInterval) return;
+    marchInterval = setInterval(() => {
         const osc = audioCtx.createOscillator();
         const g = audioCtx.createGain();
         osc.type = 'triangle';
         osc.frequency.setValueAtTime(50, audioCtx.currentTime);
-        g.gain.setValueAtTime(0.04, audioCtx.currentTime);
-        g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.3);
+        g.gain.setValueAtTime(0.08, audioCtx.currentTime);
+        g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.4);
         osc.connect(g); g.connect(audioCtx.destination);
-        osc.start(); osc.stop(audioCtx.currentTime + 0.3);
+        osc.start(); osc.stop(audioCtx.currentTime + 0.4);
     }, 600);
 }
 
-function playSound(type, z) {
+function playExplosion(z) {
     if(!audioCtx) return;
-    const now = audioCtx.currentTime;
-    if(type === 'bomb') {
-        const osc = audioCtx.createOscillator();
-        const g = audioCtx.createGain();
-        osc.frequency.setValueAtTime(500, now);
-        osc.frequency.exponentialRampToValueAtTime(80, now + 1.8);
-        g.gain.setValueAtTime(0, now);
-        g.gain.linearRampToValueAtTime(0.04 * z, now + 0.1);
-        g.gain.linearRampToValueAtTime(0, now + 1.8);
-        osc.connect(g); g.connect(audioCtx.destination);
-        osc.start(); osc.stop(now + 1.8);
-        
-        setTimeout(() => {
-            const n = audioCtx.createBufferSource();
-            const b = audioCtx.createBuffer(1, audioCtx.sampleRate * 0.5, audioCtx.sampleRate);
-            const d = b.getChannelData(0);
-            for(let i=0; i<d.length; i++) d[i] = Math.random() * 2 - 1;
-            n.buffer = b;
-            const ng = audioCtx.createGain();
-            const nf = audioCtx.createBiquadFilter();
-            nf.type = 'lowpass'; nf.frequency.value = 80 * z; // ГЛУХОЙ ВЗРЫВ
-            ng.gain.setValueAtTime(0.3 * z, audioCtx.currentTime);
-            ng.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.6);
-            n.connect(nf); nf.connect(ng); ng.connect(audioCtx.destination);
-            n.start();
-        }, 1700);
-    }
+    const n = audioCtx.createBufferSource();
+    const b = audioCtx.createBuffer(1, audioCtx.sampleRate * 0.6, audioCtx.sampleRate);
+    const d = b.getChannelData(0);
+    for(let i=0; i<d.length; i++) d[i] = Math.random() * 2 - 1;
+    n.buffer = b;
+    const ng = audioCtx.createGain();
+    const nf = audioCtx.createBiquadFilter();
+    nf.type = 'lowpass'; nf.frequency.value = 60 * z; 
+    ng.gain.setValueAtTime(0.5 * z, audioCtx.currentTime);
+    ng.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.7);
+    n.connect(nf); nf.connect(ng); ng.connect(audioCtx.destination);
+    n.start();
 }
 
 class Tank {
@@ -116,51 +97,76 @@ class Tank {
         this.x += this.speed; this.wAngle += this.speed * 0.15;
         if(this.x > W + 200) this.x = -200;
         if(--this.fireTimer < 0) {
-            // Вспышка: желтее, рассеянная, зависит от удаления
-            tankFlashes.push({x: this.x + 60*this.scale, y: this.y - 12*this.scale, l: 1.0, s: this.scale});
+            // Вспышка ВПЕРЕДИ дула (смещение 75)
+            tankFlashes.push({x: this.x + 75*this.scale, y: this.y - 15*this.scale, l: 1.0, s: this.scale});
             this.fireTimer = 200 + Math.random() * 400;
         }
     }
-    draw() {
-        ctx.save(); ctx.translate(this.x, this.y); ctx.scale(this.scale, this.scale);
-        ctx.fillStyle = '#111'; ctx.beginPath(); ctx.roundRect(-45, 8, 90, 18, 4); ctx.fill();
-        ctx.fillStyle = '#333'; for(let i = -35; i <= 35; i += 14) {
-            ctx.save(); ctx.translate(i, 18); ctx.rotate(this.wAngle); ctx.beginPath(); ctx.arc(0,0,6,0,7); ctx.fill(); ctx.restore();
+    draw(targetCtx = ctx, tx = this.x, ty = this.y, tScale = this.scale) {
+        targetCtx.save(); targetCtx.translate(tx, ty); targetCtx.scale(tScale, tScale);
+        // Гусеницы
+        targetCtx.fillStyle = '#111'; targetCtx.beginPath(); targetCtx.roundRect(-45, 8, 90, 18, 4); targetCtx.fill();
+        // КАТКИ (ВРАЩАЮТСЯ)
+        targetCtx.fillStyle = '#333'; targetCtx.strokeStyle = '#555'; targetCtx.lineWidth = 1;
+        for(let i = -35; i <= 35; i += 14) {
+            targetCtx.save(); targetCtx.translate(i, 18); targetCtx.rotate(this.wAngle);
+            targetCtx.beginPath(); targetCtx.arc(0,0,6,0,7); targetCtx.fill(); targetCtx.stroke();
+            targetCtx.beginPath(); targetCtx.moveTo(-4,0); targetCtx.lineTo(4,0); targetCtx.stroke();
+            targetCtx.restore();
         }
-        ctx.fillStyle = this.color; ctx.beginPath(); ctx.moveTo(-45,10); ctx.lineTo(-40,-5); ctx.lineTo(35,-5); ctx.lineTo(45,10); ctx.fill();
-        ctx.save(); ctx.translate(-5, -5); ctx.beginPath(); ctx.arc(0,0,18,Math.PI,0); ctx.fill();
-        ctx.fillStyle = '#111'; ctx.fillRect(15, -10, 50, 6); ctx.restore(); ctx.restore();
+        // Корпус и Башня
+        targetCtx.fillStyle = this.color; targetCtx.beginPath(); targetCtx.moveTo(-45,10); targetCtx.lineTo(-40,-5); targetCtx.lineTo(35,-5); targetCtx.lineTo(45,10); targetCtx.fill();
+        targetCtx.save(); targetCtx.translate(-5, -5); targetCtx.beginPath(); targetCtx.arc(0,0,18,Math.PI,0); targetCtx.fill();
+        targetCtx.fillStyle = '#111'; targetCtx.fillRect(15, -10, 50, 6); targetCtx.restore(); targetCtx.restore();
     }
 }
 
 class Plane {
     constructor(y, speed, type, z) {
-        this.x = W + 400; this.y = y; this.baseY = y; this.speed = speed * 0.7; this.type = type; this.z = z; this.timer = Math.random()*10;
+        this.x = W + 400; this.y = y; this.baseY = y; this.speed = speed * 0.49; // Замедление 30% от прошлого (суммарно медленнее)
+        this.type = type; this.z = z; this.timer = Math.random()*10;
     }
     update() {
         this.x -= this.speed; this.timer += 0.04;
         this.y = this.baseY + Math.sin(this.timer) * 30;
-        if(this.type === 'fighter') {
-            if(Math.random() < 0.2) bullets.push({x:this.x-40, y:this.y+5, a:Math.sin(this.timer)*0.15, v:20, l:35});
-        } else if(Math.random() < 0.005) {
+        if(this.type === 'bomber' && Math.random() < 0.005) {
             bombs.push({x:this.x, y:this.y, vy:1, z:this.z});
-            playSound('bomb', this.z);
+            // Свист
+            const o = audioCtx.createOscillator(); const g = audioCtx.createGain();
+            o.frequency.setValueAtTime(600, audioCtx.currentTime); o.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime+1.5);
+            g.gain.setValueAtTime(0.05, audioCtx.currentTime); g.gain.linearRampToValueAtTime(0, audioCtx.currentTime+1.5);
+            o.connect(g); g.connect(audioCtx.destination); o.start(); o.stop(audioCtx.currentTime+1.5);
         }
         if(this.x < -500) this.x = W + 500;
     }
-    draw() {
-        ctx.save(); ctx.translate(this.x, this.y); ctx.scale(this.z, this.z);
-        ctx.fillStyle = '#3e4432';
-        ctx.fillRect(-12, -8, 28, 16); // Узкое крыло
-        if(this.type === 'bomber') ctx.fillRect(-70, -5, 120, 16); 
-        else ctx.fillRect(-50, 0, 100, 11);
-        ctx.restore();
+    draw(targetCtx = ctx, tx = this.x, ty = this.y, tScale = this.z) {
+        targetCtx.save(); targetCtx.translate(tx, ty); targetCtx.scale(tScale, tScale);
+        targetCtx.fillStyle = '#3e4432'; targetCtx.fillRect(-12, -8, 28, 16); // Узкие крылья
+        if(this.type === 'bomber') targetCtx.fillRect(-70, -5, 120, 16); 
+        else targetCtx.fillRect(-50, 0, 100, 11);
+        targetCtx.restore();
     }
 }
 
 function toggleLib() {
     const l = document.getElementById('library-overlay');
-    l.style.display = l.style.display === 'block' ? 'none' : 'block';
+    const isVisible = l.style.display === 'block';
+    l.style.display = isVisible ? 'none' : 'block';
+    if(!isVisible) drawLibrary();
+}
+
+function drawLibrary() {
+    const tCanvas = document.getElementById('tankPreview');
+    const pCanvas = document.getElementById('planePreview');
+    const tCtx = tCanvas.getContext('2d');
+    const pCtx = pCanvas.getContext('2d');
+    
+    tCtx.clearRect(0,0,200,100);
+    pCtx.clearRect(0,0,200,100);
+    
+    // Рисуем образцы в библиотеку
+    if(vehicles.length) vehicles[2].draw(tCtx, 100, 50, 1.2);
+    if(planes.length) planes[0].draw(pCtx, 100, 50, 1.0);
 }
 
 function resize() {
@@ -178,37 +184,31 @@ function loop() {
     planes.forEach(p => { p.update(); p.draw(); });
     vehicles.forEach(v => { v.update(); v.draw(); });
     
-    // Вспышки танков: Желтые, рассеянные, размер от Z
     tankFlashes.forEach((f, i) => {
-        let grad = ctx.createRadialGradient(f.x, f.y, 0, f.x, f.y, 25*f.s);
-        grad.addColorStop(0, `rgba(255, 255, 0, ${f.l})`);
-        grad.addColorStop(1, 'transparent');
-        ctx.fillStyle = grad;
-        ctx.beginPath(); ctx.arc(f.x, f.y, 25*f.s, 0, 7); ctx.fill();
-        f.l -= 0.1; if(f.l <= 0) tankFlashes.splice(i, 1);
+        let grad = ctx.createRadialGradient(f.x, f.y, 0, f.x, f.y, 30*f.s);
+        grad.addColorStop(0, `rgba(255, 255, 0, ${f.l})`); grad.addColorStop(1, 'transparent');
+        ctx.fillStyle = grad; ctx.beginPath(); ctx.arc(f.x, f.y, 30*f.s, 0, 7); ctx.fill();
+        f.l -= 0.15; if(f.l <= 0) tankFlashes.splice(i, 1);
     });
 
     bombs.forEach((b, i) => {
         b.y += b.vy; b.vy += 0.12;
         ctx.fillStyle = '#000'; ctx.beginPath(); ctx.arc(b.x, b.y, 4, 0, 7); ctx.fill();
         let ground = b.z < 0.7 ? H-160 : (b.z < 1 ? H-110 : H-55);
-        if(b.y > ground) { explosions.push({x:b.x, y:b.y, s:b.z, l:1.0}); bombs.splice(i,1); }
+        if(b.y > ground) { 
+            explosions.push({x:b.x, y:b.y, s:b.z, l:1.0}); 
+            playExplosion(b.z);
+            bombs.splice(i,1); 
+        }
     });
 
     explosions.forEach((ex, i) => {
         ctx.save(); ctx.globalAlpha = ex.l; ctx.fillStyle = '#ff4500';
-        ctx.beginPath(); ctx.ellipse(ex.x, ex.y, 70*ex.s*(1.2-ex.l), 20*ex.s*(1.2-ex.l), 0, 0, 7);
+        ctx.beginPath(); ctx.ellipse(ex.x, ex.y, 75*ex.s*(1.2-ex.l), 20*ex.s*(1.2-ex.l), 0, 0, 7);
         ctx.fill(); ctx.restore();
         ex.l -= 0.04; if(ex.l <= 0) explosions.splice(i, 1);
     });
 
-    bullets.forEach((b, i) => {
-        ctx.strokeStyle = '#ffd700'; ctx.lineWidth = 2;
-        ctx.beginPath(); ctx.moveTo(b.x, b.y);
-        b.x -= Math.cos(b.a)*b.v; b.y -= Math.sin(b.a)*b.v;
-        ctx.lineTo(b.x, b.y); ctx.stroke();
-        if(b.l-- < 0) bullets.splice(i,1);
-    });
     requestAnimationFrame(loop);
 }
 
