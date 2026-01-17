@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>СТАЛЬНАЯ ГРОЗА: ГЕН-19</title>
+    <title>ТАНКИ: ГЕН-21</title>
     <style>
         body { margin: 0; background: #050505; overflow: hidden; touch-action: none; font-family: 'monospace'; }
         canvas { display: block; background: linear-gradient(to bottom, #0d121d 0%, #000 100%); }
@@ -12,7 +12,7 @@
 </head>
 <body>
 
-<div id="gen-num">ГЕНЕРАЦИЯ №19</div>
+<div id="gen-num">ГЕНЕРАЦИЯ №21</div>
 <canvas id="battleCanvas"></canvas>
 
 <script>
@@ -24,26 +24,77 @@ const vehicles = [], planes = [], bombs = [], bullets = [], explosions = [];
 
 function initAudio() { if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
 
+// --- СИНТЕЗАТОР ЗВУКА ---
+function playBombSound(z) {
+    if(!audioCtx) return;
+    const now = audioCtx.currentTime;
+    const vol = z * 0.15; // Громкость от дальности
+
+    // Свист (Whistle) - Приглушенный
+    const osc = audioCtx.createOscillator();
+    const g = audioCtx.createGain();
+    const filter = audioCtx.createBiquadFilter();
+    
+    osc.type = 'sine';
+    filter.type = 'lowpass'; filter.frequency.value = 800; // Приглушаем звук
+    
+    osc.frequency.setValueAtTime(800, now);
+    osc.frequency.exponentialRampToValueAtTime(100, now + 1.5);
+    
+    g.gain.setValueAtTime(0, now);
+    g.gain.linearRampToValueAtTime(vol, now + 0.1);
+    g.gain.linearRampToValueAtTime(0, now + 1.5);
+    
+    osc.connect(filter); filter.connect(g); g.connect(audioCtx.destination);
+    osc.start(); osc.stop(now + 1.5);
+
+    // Взрыв (Explosion) - в конце свиста
+    setTimeout(() => {
+        const n = audioCtx.createBufferSource();
+        const b = audioCtx.createBuffer(1, audioCtx.sampleRate * 0.5, audioCtx.sampleRate);
+        const data = b.getChannelData(0);
+        for(let i=0; i<data.length; i++) data[i] = Math.random() * 2 - 1;
+        n.buffer = b;
+        
+        const ng = audioCtx.createGain();
+        const nf = audioCtx.createBiquadFilter();
+        nf.type = 'lowpass'; nf.frequency.value = 100 * z; // Глухой звук для дальних
+        
+        ng.gain.setValueAtTime(vol * 2, audioCtx.currentTime);
+        ng.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.5);
+        
+        n.connect(nf); nf.connect(ng); ng.connect(audioCtx.destination);
+        n.start();
+    }, 1450);
+}
+
 class Tank {
     constructor(y, speed, scale, color, z) {
         this.x = Math.random() * W; this.y = y; this.speed = speed; this.scale = scale; this.color = color; this.z = z;
+        this.wAngle = 0;
     }
     update() {
         this.x += this.speed;
+        this.wAngle += this.speed * 0.15;
         if(this.x > W + 200) this.x = -200;
     }
     draw() {
         ctx.save(); ctx.translate(this.x, this.y); ctx.scale(this.scale, this.scale);
-        // Гусеницы
         ctx.fillStyle = '#111'; ctx.beginPath(); ctx.roundRect(-45, 8, 90, 18, 4); ctx.fill();
-        // Корпус
-        ctx.fillStyle = this.color; ctx.strokeStyle = '#000'; ctx.lineWidth = 1;
+        ctx.fillStyle = '#333'; ctx.strokeStyle = '#666'; ctx.lineWidth = 1;
+        for(let i = -35; i <= 35; i += 14) {
+            ctx.save(); ctx.translate(i, 18); ctx.rotate(this.wAngle);
+            ctx.beginPath(); ctx.arc(0, 0, 6, 0, 7); ctx.fill(); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(-4, 0); ctx.lineTo(4, 0); ctx.stroke();
+            ctx.restore();
+        }
+        ctx.fillStyle = this.color; ctx.strokeStyle = '#000'; ctx.lineWidth = 1.5;
         ctx.beginPath(); ctx.moveTo(-45, 10); ctx.lineTo(-40, -5); ctx.lineTo(35, -5); ctx.lineTo(45, 10); ctx.closePath(); ctx.fill(); ctx.stroke();
-        // Башня и Орудие (с контрастной обводкой чтобы не сливалось)
-        ctx.fillStyle = this.color; ctx.beginPath(); ctx.arc(-5, -8, 18, Math.PI, 0); ctx.fill(); ctx.stroke();
-        ctx.strokeStyle = '#fff'; ctx.lineWidth = 0.5; // Светлый блик на стволе
-        ctx.fillStyle = '#000'; ctx.fillRect(12, -16, 50, 6); ctx.strokeRect(12, -16, 50, 6);
-        ctx.restore();
+        ctx.save(); ctx.translate(-5, -5);
+        ctx.beginPath(); ctx.arc(0, 0, 18, Math.PI, 0); ctx.fill(); ctx.stroke();
+        ctx.fillStyle = '#111'; ctx.strokeStyle = '#fff'; ctx.lineWidth = 0.5;
+        ctx.fillRect(15, -10, 50, 6); ctx.strokeRect(15, -10, 50, 6);
+        ctx.restore(); ctx.restore();
     }
 }
 
@@ -53,74 +104,65 @@ class Plane {
         this.timer = Math.random() * 10; this.angle = 0;
     }
     update() {
-        this.x -= this.speed;
-        this.timer += 0.05;
-        // Маневр и стрельба
+        this.x -= this.speed; this.timer += 0.05;
         let wave = Math.sin(this.timer);
         this.y = this.baseY + wave * 40;
         this.angle = wave * 0.2;
 
         if(this.type === 'fighter') {
-            if(Math.random() < 0.4) { // Постоянные очереди
-                bullets.push({x: this.x - 45, y: this.y + 10, a: this.angle, v: 25, l: 40});
+            if(Math.random() < 0.4) bullets.push({x: this.x - 45, y: this.y + 5, a: this.angle, v: 25, l: 40});
+        } else {
+            // Рандомный сброс бомб
+            if(Math.random() < 0.008) {
+                bombs.push({x: this.x, y: this.y, vy: 1, z: this.z});
+                playBombSound(this.z);
             }
-        } else if(Math.floor(this.timer*10)%120 === 0) {
-            let b = {x: this.x, y: this.y, vy: 1, z: this.z, whistled: false};
-            bombs.push(b);
-            playWhistle(b);
         }
-        if(this.x < -400) this.x = W + 400;
+        if(this.x < -500) this.x = W + 500;
     }
     draw() {
         ctx.save(); ctx.translate(this.x, this.y); ctx.rotate(this.angle); ctx.scale(this.z, this.z);
-        ctx.fillStyle = '#3e4432'; ctx.strokeStyle = '#000';
-        if(this.type === 'bomber') { // Ju 52 style
-            ctx.fillRect(-60, -5, 110, 20); ctx.fillRect(45, 0, 10, 10); // Носовой мотор
-            ctx.fillRect(-5, -45, 20, 90); // Крыло
-            ctx.fillRect(-5, 15, 20, 10); ctx.fillRect(-5, -25, 20, 10); // Крыльевые моторы
-        } else { // Hs 129 style
-            ctx.beginPath(); ctx.moveTo(-50, 0); ctx.lineTo(40, 0); ctx.lineTo(50, 10); ctx.lineTo(-50, 10); ctx.fill(); ctx.stroke();
-            ctx.fillRect(0, 10, 25, 10); ctx.fillRect(0, -10, 25, 10); // Моторы под крылом
-            ctx.fillRect(-10, -35, 15, 70); // Крыло
+        ctx.fillStyle = '#3e4432'; ctx.strokeStyle = '#000'; ctx.lineWidth = 1.2;
+        if(this.type === 'bomber') {
+            // Ju-52: Детализированный корпус
+            ctx.beginPath();
+            ctx.moveTo(-70, 5); ctx.lineTo(-65, -15); ctx.lineTo(30, -15); 
+            ctx.quadraticCurveTo(55, -10, 60, 5); ctx.lineTo(60, 15); ctx.lineTo(-70, 15);
+            ctx.closePath(); ctx.fill(); ctx.stroke();
+            // Три мотора
+            ctx.fillStyle = '#222';
+            ctx.fillRect(60, 2, 8, 10); // Нос
+            ctx.fillRect(5, 20, 20, 12); ctx.fillRect(5, -32, 20, 12); // Крыльевые
+            ctx.fillStyle = '#444'; ctx.fillRect(-10, -55, 25, 110); // Крыло
+        } else {
+            // Hs-129: Тонкий фюзеляж, кабина ступенькой
+            ctx.beginPath();
+            ctx.moveTo(-55, 12); ctx.lineTo(-50, 0); ctx.lineTo(10, 0);
+            ctx.lineTo(15, -6); ctx.lineTo(35, -6); ctx.lineTo(55, 12); 
+            ctx.closePath(); ctx.fill(); ctx.stroke();
+            ctx.fillStyle = '#222';
+            ctx.fillRect(5, 12, 30, 14); ctx.fillRect(5, -16, 30, 14); // Двигатели
+            ctx.fillStyle = '#444'; ctx.fillRect(-5, -45, 18, 90); // Крыло
         }
         ctx.restore();
     }
-}
-
-function playWhistle(bomb) {
-    if(!audioCtx) return;
-    const osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
-    osc.type = 'triangle';
-    osc.frequency.setValueAtTime(1000, audioCtx.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 2);
-    gain.gain.setValueAtTime(0, audioCtx.currentTime);
-    gain.gain.linearRampToValueAtTime(0.1, audioCtx.currentTime + 0.1);
-    gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 2);
-    osc.connect(gain); gain.connect(audioCtx.destination);
-    osc.start(); osc.stop(audioCtx.currentTime + 2);
 }
 
 function resize() {
     W = window.innerWidth; H = window.innerHeight;
     canvas.width = W; canvas.height = H;
     vehicles.length = 0; planes.length = 0;
-    // Три линии танков
-    vehicles.push(new Tank(H-160, 0.8, 0.5, '#1e2a1a', 0.5)); // Дальний
-    vehicles.push(new Tank(H-110, 1.2, 0.8, '#2d4028', 0.8)); // Средний
-    vehicles.push(new Tank(H-50, 1.8, 1.2, '#3e5c36', 1.2));  // Ближний
-    
-    planes.push(new Plane(H*0.2, 3, 'bomber', 0.7));
-    planes.push(new Plane(H*0.35, 8, 'fighter', 1.0));
-    planes.push(new Plane(H*0.15, 5, 'fighter', 0.5));
+    vehicles.push(new Tank(H-160, 0.7, 0.5, '#1e2a1a', 0.5)); 
+    vehicles.push(new Tank(H-110, 1.1, 0.8, '#2d4028', 0.8));
+    vehicles.push(new Tank(H-55, 1.7, 1.25, '#3e5c36', 1.2));  
+    planes.push(new Plane(H*0.2, 4, 'bomber', 0.8));
+    planes.push(new Plane(H*0.4, 8, 'fighter', 1.1));
 }
 
 function loop() {
     ctx.clearRect(0,0,W,H);
-    initAudio();
-
     planes.forEach(p => { p.update(); p.draw(); });
     vehicles.forEach(v => { v.update(); v.draw(); });
-
     bullets.forEach((b, i) => {
         ctx.strokeStyle = '#ffd700'; ctx.lineWidth = 2;
         ctx.beginPath(); ctx.moveTo(b.x, b.y);
@@ -128,31 +170,25 @@ function loop() {
         ctx.lineTo(b.x, b.y); ctx.stroke();
         if(b.l-- < 0) bullets.splice(i,1);
     });
-
     bombs.forEach((b, i) => {
-        b.y += b.vy; b.vy += 0.15;
+        b.y += b.vy; b.vy += 0.14;
         ctx.fillStyle = '#000'; ctx.beginPath(); ctx.arc(b.x, b.y, 4, 0, 7); ctx.fill();
-        let gY = b.z < 0.8 ? H-160 : (b.z < 1 ? H-110 : H-50);
+        let gY = b.z < 0.7 ? H-160 : (b.z < 1 ? H-110 : H-55);
         if(b.y > gY) {
             explosions.push({x: b.x, y: b.y, s: b.z, l: 1.0});
             bombs.splice(i, 1);
         }
     });
-
     explosions.forEach((ex, i) => {
-        ctx.save(); ctx.globalAlpha = ex.l;
-        ctx.fillStyle = '#ff4500';
-        ctx.beginPath();
-        // Овальный взрыв вдоль земли
-        ctx.ellipse(ex.x, ex.y, 60*ex.s*(1-ex.l+0.2), 20*ex.s*(1-ex.l+0.2), 0, 0, 7);
+        ctx.save(); ctx.globalAlpha = ex.l; ctx.fillStyle = '#ff4500';
+        ctx.beginPath(); ctx.ellipse(ex.x, ex.y, 70*ex.s*(1.2-ex.l), 25*ex.s*(1.2-ex.l), 0, 0, 7);
         ctx.fill(); ctx.restore();
         ex.l -= 0.04; if(ex.l <= 0) explosions.splice(i, 1);
     });
-
     requestAnimationFrame(loop);
 }
 
-window.addEventListener('click', initAudio);
+window.addEventListener('mousedown', initAudio);
 window.addEventListener('resize', resize);
 resize(); loop();
 </script>
