@@ -3,50 +3,163 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ТАНКИ: ГЕН-29 (МЕЛОДИИ И ДЕТАЛИ)</title>
+    <title>ТАНКИ: ГЕН-32 (ВОЗВРАТ К 29) - ФОН МЕНЮ</title>
     <style>
-        body { margin: 0; background: #050505; overflow: hidden; font-family: 'Courier New', monospace; color: white; }
-        canvas { display: block; background: linear-gradient(to bottom, #1a1c2c 0%, #000 100%); }
-        #gen-num { position: fixed; top: 10px; left: 10px; font-size: 14px; z-index: 10; font-weight: bold; }
-        #lib-btn { position: fixed; top: 10px; right: 10px; z-index: 100; padding: 5px 15px; background: #444; color: #fff; border: 1px solid #777; cursor: pointer; }
-        
-        #library-overlay { 
-            position: fixed; inset: 0; background: rgba(10,10,15,0.98); z-index: 200; 
-            display: none; padding: 20px; overflow-y: auto;
+        body { 
+            margin: 0; 
+            background: #050505; 
+            overflow: hidden; 
+            font-family: 'Courier New', monospace; 
+            color: white; 
+            opacity: 0;
+            animation: fadeIn 2s ease-out forwards;
         }
-        .lib-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-        .lib-col { border: 1px solid #444; padding: 15px; background: rgba(255,255,255,0.05); }
-        .archive-item { background: #111; margin-bottom: 15px; padding: 10px; border: 1px solid #333; }
-        
-        .selector-box { margin: 15px 0; padding: 10px; background: #222; border: 1px solid #555; }
-        .opt { cursor: pointer; padding: 4px 8px; margin: 2px; border: 1px solid #444; display: inline-block; font-size: 11px; }
-        .opt:hover { background: #555; }
-        .active-opt { border-color: #f1c40f; color: #f1c40f; }
-        .close-lib { float: right; cursor: pointer; color: #e74c3c; font-weight: bold; }
+        @keyframes fadeIn {
+            to { opacity: 1; }
+        }
+        canvas { 
+            display: block; 
+            background: transparent; 
+        }
+        #gen-num { 
+            position: fixed; 
+            top: 10px; 
+            left: 10px; 
+            font-size: 14px; 
+            z-index: 10; 
+            font-weight: bold; 
+            text-shadow: 0 0 10px rgba(0,255,0,0.5);
+            opacity: 0.7;
+        }
+        #lib-btn { 
+            position: fixed; 
+            top: 10px; 
+            right: 10px; 
+            z-index: 100; 
+            padding: 5px 15px; 
+            background: rgba(68, 68, 68, 0.7); 
+            color: #fff; 
+            border: 1px solid #777; 
+            cursor: pointer;
+            backdrop-filter: blur(5px);
+            transition: all 0.3s;
+        }
+        #lib-btn:hover {
+            background: rgba(100, 100, 100, 0.9);
+            transform: scale(1.05);
+        }
+        #library-overlay { 
+            position: fixed; 
+            inset: 0; 
+            background: rgba(10,10,15,0.98); 
+            z-index: 200; 
+            display: none; 
+            padding: 20px; 
+            overflow-y: auto; 
+        }
+        .lib-grid { 
+            display: grid; 
+            grid-template-columns: 1fr 1fr; 
+            gap: 20px; 
+        }
+        @media (max-width: 768px) {
+            .lib-grid { grid-template-columns: 1fr; }
+        }
+        .archive-item { 
+            background: rgba(17, 17, 17, 0.8); 
+            margin-bottom: 15px; 
+            padding: 10px; 
+            border: 1px solid #333; 
+            text-align: center;
+            transition: transform 0.3s;
+            cursor: pointer;
+        }
+        .archive-item:hover {
+            transform: translateY(-5px);
+            border-color: #f1c40f;
+        }
+        canvas.prev { 
+            background: #000; 
+            border: 1px solid #444; 
+            margin-top: 5px; 
+        }
+        .close-lib { 
+            float: right; 
+            cursor: pointer; 
+            color: #e74c3c; 
+            font-weight: bold;
+            padding: 5px 10px;
+        }
+        .status-bar { 
+            background: rgba(34, 34, 34, 0.8); 
+            padding: 10px; 
+            margin-bottom: 20px; 
+            border: 1px solid #555; 
+            font-size: 12px; 
+            color: #f1c40f; 
+        }
+        #menu-overlay {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 150;
+            background: rgba(10, 20, 30, 0.85);
+            padding: 40px;
+            border: 2px solid #444;
+            text-align: center;
+            min-width: 300px;
+            backdrop-filter: blur(10px);
+            display: none;
+        }
+        .menu-btn {
+            display: block;
+            width: 100%;
+            padding: 15px;
+            margin: 10px 0;
+            background: rgba(50, 50, 70, 0.7);
+            color: white;
+            border: 1px solid #666;
+            cursor: pointer;
+            font-family: 'Courier New', monospace;
+            font-size: 16px;
+            transition: all 0.3s;
+        }
+        .menu-btn:hover {
+            background: rgba(80, 80, 120, 0.9);
+            border-color: #f1c40f;
+            transform: scale(1.05);
+        }
+        #volume-slider {
+            width: 100%;
+            margin: 20px 0;
+        }
     </style>
 </head>
 <body>
 
-<div id="gen-num">ГЕНЕРАЦИЯ №29</div>
+<div id="gen-num">ГЕНЕРАЦИЯ №32 | ФОН МЕНЮ</div>
 <button id="lib-btn" onclick="toggleLib()">БИБЛИОТЕКА</button>
+
+<div id="menu-overlay">
+    <h2>ГЛАВНОЕ МЕНЮ</h2>
+    <button class="menu-btn" onclick="startGame('tank')">ТАНКОВАЯ БИТВА</button>
+    <button class="menu-btn" onclick="startGame('air')">ВОЗДУШНЫЙ НАЛЁТ</button>
+    <button class="menu-btn" onclick="startGame('night')">НОЧНАЯ ОПЕРАЦИЯ</button>
+    <button class="menu-btn" onclick="toggleMenu()">ПРОДОЛЖИТЬ ПРОСМОТР</button>
+    <br>
+    <label>ГРОМКОСТЬ: <input type="range" id="volume-slider" min="0" max="100" value="30"></label>
+</div>
 
 <div id="library-overlay">
     <span class="close-lib" onclick="toggleLib()">[ЗАКРЫТЬ]</span>
-    <h2>ВОЕННЫЙ АРХИВ (ГЕН-29)</h2>
-    
-    <div class="selector-box">
-        <b>ВЫБОР МАРША (11-20 - СЛОЖНЫЕ МЕЛОДИИ):</b><br>
-        <div id="march-opts"></div>
+    <h2>АРХИВ ТЕХНИКИ</h2>
+    <div class="status-bar">
+        УСТАНОВКИ: МАРШ (МЕЛ. 1) | СВИСТ БОМБЫ (№4) | БАЗА: ГЕН-29 | РЕЖИМ: <span id="mode-indicator">ФОН МЕНЮ</span>
     </div>
-
-    <div class="selector-box">
-        <b>ЗВУК ПАДАЮЩЕЙ БОМБЫ (10 ВАР.):</b><br>
-        <div id="bomb-opts"></div>
-    </div>
-
     <div class="lib-grid">
-        <div class="lib-col" id="planes-arch"><h3>АВИАЦИЯ</h3></div>
-        <div class="lib-col" id="tanks-arch"><h3>БРОНЕТЕХНИКА</h3></div>
+        <div class="lib-col" id="p-arch"><h3>АВИАЦИЯ</h3></div>
+        <div class="lib-col" id="t-arch"><h3>БРОНЕТЕХНИКА</h3></div>
     </div>
 </div>
 
@@ -55,233 +168,1231 @@
 <script>
 const canvas = document.getElementById('battleCanvas');
 const ctx = canvas.getContext('2d');
-let W, H, audioCtx, marchGain;
-let selectedMarch = 10; // По умолчанию 11-й (индекс 10)
-let selectedBombSound = 0;
+let W, H, audioCtx, marchGain, masterGain;
+let timeOfDay = 0.5; // 0 = ночь, 1 = день
+let daySpeed = 0.00003; // Скорость смены дня/ночи
+let currentMode = 'menu'; // menu, tank, air, night
 
-const archive = [24, 25, 26, 27, 28, 29];
+const archive = [24, 25, 26, 27, 28, 29, 30, 31, 32];
 const vehicles = [], planes = [], bombs = [], bullets = [], explosions = [], tankFlashes = [];
+const smokes = [], particles = [], mountains = [], infantry = [], fires = [];
+let shells = [], farExplosions = [], spotlights = [], birds = [], clouds = [];
+let menuActive = true;
+
+// Пул объектов для оптимизации
+const particlePool = [], explosionPool = [];
+
+function getParticle() {
+    if (particlePool.length > 0) return particlePool.pop();
+    return { x:0, y:0, vx:0, vy:0, life:1, color:'', size:1 };
+}
+
+function recycleParticle(p) {
+    particlePool.push(p);
+}
 
 function initAudio() {
-    if(!audioCtx) {
+    if (!audioCtx) {
         audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        marchGain = audioCtx.createGain(); marchGain.gain.value = 0.15;
-        marchGain.connect(audioCtx.destination);
-        startMusicEngine();
-        setupSelectors();
+        masterGain = audioCtx.createGain();
+        masterGain.gain.value = 0.3;
+        masterGain.connect(audioCtx.destination);
+        
+        marchGain = audioCtx.createGain();
+        marchGain.gain.value = 0.12;
+        marchGain.connect(masterGain);
+        
+        // Запуск фоновых звуков
+        startSelectedMusic();
+        startAmbientSounds();
+        
+        // Настройка громкости из слайдера
+        document.getElementById('volume-slider').addEventListener('input', (e) => {
+            if (masterGain) masterGain.gain.value = e.target.value / 100;
+        });
     }
 }
 
-function startMusicEngine() {
-    let step = 0;
+function startAmbientSounds() {
+    // Фоновый гул/ветер
     setInterval(() => {
-        if(!audioCtx || audioCtx.state === 'suspended') return;
+        if (!audioCtx || audioCtx.state === 'suspended') return;
+        const now = audioCtx.currentTime;
+        const noise = audioCtx.createBufferSource();
+        const buffer = audioCtx.createBuffer(1, audioCtx.sampleRate * 0.5, audioCtx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < data.length; i++) {
+            data[i] = Math.random() * 2 - 1;
+        }
+        noise.buffer = buffer;
+        
+        const filter = audioCtx.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.frequency.value = 300 + Math.random() * 100;
+        
+        const gain = audioCtx.createGain();
+        gain.gain.value = 0.02;
+        gain.gain.linearRampToValueAtTime(0, now + 0.5);
+        
+        noise.connect(filter);
+        filter.connect(gain);
+        gain.connect(masterGain);
+        noise.start();
+        noise.stop(now + 0.5);
+    }, 3000);
+}
+
+// ФИКСИРОВАННАЯ МЕЛОДИЯ 1 (из Ген-29)
+function startSelectedMusic() {
+    let step = 0;
+    const scale = [174.61, 196.00, 207.65, 233.08, 261.63];
+    const pattern = [0, 2, 4, 3, 2, 0, 1, 2];
+    
+    setInterval(() => {
+        if (!audioCtx || audioCtx.state === 'suspended') return;
         const now = audioCtx.currentTime;
         
-        // Ритм-секция (Сапоги)
+        // Ритм (шаг)
         const kick = audioCtx.createOscillator();
         const kg = audioCtx.createGain();
-        kick.frequency.setValueAtTime(50 + (selectedMarch % 5), now);
-        kg.gain.setValueAtTime(0.1, now); kg.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
-        kick.connect(kg); kg.connect(marchGain);
-        kick.start(); kick.stop(now + 0.2);
+        kick.frequency.setValueAtTime(52, now);
+        kg.gain.setValueAtTime(0.1, now); 
+        kg.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+        kick.connect(kg); 
+        kg.connect(marchGain); 
+        kick.start(); 
+        kick.stop(now + 0.2);
 
-        // Сложная мелодия (для вариантов 11-20)
-        if(selectedMarch >= 10) {
-            const melody = audioCtx.createOscillator();
-            const mg = audioCtx.createGain();
-            const scale = [174.61, 196.00, 207.65, 233.08, 261.63]; // F, G, Ab, Bb, C (Minor)
-            const pattern = [0, 2, 4, 3, 2, 0, 1, 2];
-            melody.type = 'sawtooth';
-            melody.frequency.setValueAtTime(scale[pattern[step % 8]], now);
-            mg.gain.setValueAtTime(0.03, now); mg.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
-            melody.connect(mg); mg.connect(marchGain);
-            melody.start(); melody.stop(now + 0.4);
+        // Мелодия 1 с вариациями
+        const melody = audioCtx.createOscillator();
+        const mg = audioCtx.createGain();
+        melody.type = 'sawtooth';
+        const pitchVariation = 1.0 + (Math.random() * 0.1 - 0.05);
+        melody.frequency.setValueAtTime(scale[pattern[step % 8]] * pitchVariation, now);
+        mg.gain.setValueAtTime(0.02, now); 
+        mg.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+        melody.connect(mg); 
+        mg.connect(marchGain); 
+        melody.start(); 
+        melody.stop(now + 0.4);
+        
+        // Звук движения танков (редкий)
+        if (Math.random() < 0.1) {
+            const engine = audioCtx.createOscillator();
+            const eg = audioCtx.createGain();
+            engine.type = 'sawtooth';
+            engine.frequency.setValueAtTime(80 + Math.random() * 40, now);
+            eg.gain.setValueAtTime(0.01, now);
+            eg.gain.exponentialRampToValueAtTime(0.001, now + 1.5);
+            engine.connect(eg);
+            eg.connect(masterGain);
+            engine.start();
+            engine.stop(now + 1.5);
         }
+        
         step++;
     }, 500);
 }
 
-function playBombEffect(z) {
-    if(!audioCtx) return;
+// СВИСТ 4 + ВЗРЫВ с вариациями
+function playBombEffect(z, x) {
+    if (!audioCtx) return;
     const now = audioCtx.currentTime;
-    // Свист (10 вариантов)
-    const s = audioCtx.createOscillator(); const sg = audioCtx.createGain();
-    const startFreq = 400 + (selectedBombSound * 100);
-    s.frequency.setValueAtTime(startFreq, now);
-    s.frequency.exponentialRampToValueAtTime(100, now + 1.5);
-    sg.gain.setValueAtTime(0, now);
-    sg.gain.linearRampToValueAtTime(0.05, now + 0.2);
-    sg.gain.linearRampToValueAtTime(0, now + 1.5);
-    s.connect(sg); sg.connect(audioCtx.destination);
-    s.start(); s.stop(now + 1.5);
+    
+    // Свист №4 с вариациями
+    const s = audioCtx.createOscillator(); 
+    const sg = audioCtx.createGain();
+    const pitch = 600 + Math.random() * 200;
+    s.frequency.setValueAtTime(pitch, now);
+    s.frequency.exponentialRampToValueAtTime(100, now + 1.2);
+    sg.gain.setValueAtTime(0.05, now); 
+    sg.gain.linearRampToValueAtTime(0, now + 1.2);
+    s.connect(sg); 
+    sg.connect(masterGain); 
+    s.start(); 
+    s.stop(now + 1.2);
 
+    // Взрыв с вариациями
     setTimeout(() => {
         const n = audioCtx.createBufferSource();
-        const b = audioCtx.createBuffer(1, audioCtx.sampleRate * 0.7, audioCtx.sampleRate);
-        const d = b.getChannelData(0); for(let i=0; i<d.length; i++) d[i] = Math.random() * 2 - 1;
-        n.buffer = b; const ng = audioCtx.createGain(); const nf = audioCtx.createBiquadFilter();
-        nf.type = 'lowpass'; nf.frequency.value = 40 * z; ng.gain.value = 0.6 * z;
-        n.connect(nf); nf.connect(ng); ng.connect(audioCtx.destination); n.start();
-    }, 1400);
+        const b = audioCtx.createBuffer(1, audioCtx.sampleRate * (0.5 + Math.random() * 0.3), audioCtx.sampleRate);
+        const d = b.getChannelData(0); 
+        for (let i = 0; i < d.length; i++) {
+            d[i] = (Math.random() * 2 - 1) * Math.exp(-i / (audioCtx.sampleRate * 0.1));
+        }
+        n.buffer = b; 
+        const ng = audioCtx.createGain(); 
+        const nf = audioCtx.createBiquadFilter();
+        nf.type = 'lowpass'; 
+        nf.frequency.value = 100 + (z * 50); 
+        ng.gain.value = 0.5 * z * (0.8 + Math.random() * 0.4);
+        n.connect(nf); 
+        nf.connect(ng); 
+        ng.connect(masterGain); 
+        n.start();
+        n.stop(now + 2.0);
+    }, 1200);
+}
+
+// Класс для пехоты
+class Infantry {
+    constructor(y, side) {
+        this.x = side === 'left' ? -20 : W + 20;
+        this.y = y;
+        this.side = side;
+        this.speed = 0.5 + Math.random() * 1;
+        this.state = 'running'; // running, hiding, firing
+        this.timer = 0;
+        this.color = `rgb(80, ${60 + Math.random() * 40}, 50)`;
+    }
+    
+    update() {
+        this.timer += 0.05;
+        if (this.side === 'left') {
+            this.x += this.speed;
+            if (this.x > W + 20) this.x = -20;
+        } else {
+            this.x -= this.speed;
+            if (this.x < -20) this.x = W + 20;
+        }
+        
+        // Случайная смена состояния
+        if (Math.random() < 0.005) {
+            this.state = ['running', 'hiding', 'firing'][Math.floor(Math.random() * 3)];
+        }
+        
+        // Анимация бега/прятания
+        this.y += Math.sin(this.timer) * 1;
+    }
+    
+    draw() {
+        ctx.save();
+        ctx.translate(this.x, this.y);
+        
+        if (this.state === 'hiding') {
+            ctx.fillStyle = '#333';
+            ctx.fillRect(-8, -4, 16, 8);
+        } else {
+            // Тело
+            ctx.fillStyle = this.color;
+            ctx.beginPath();
+            ctx.arc(0, 0, 4, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Голова
+            ctx.fillStyle = '#e0b090';
+            ctx.beginPath();
+            ctx.arc(0, -6, 3, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Оружие
+            if (this.state === 'firing') {
+                ctx.strokeStyle = '#ff5500';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(5, -2);
+                ctx.lineTo(15 + Math.sin(Date.now()/100)*5, -2);
+                ctx.stroke();
+            } else {
+                ctx.fillStyle = '#666';
+                ctx.fillRect(5, -2, 10, 2);
+            }
+        }
+        
+        ctx.restore();
+    }
+}
+
+// Класс для грузовика
+class Truck {
+    constructor(y, speed, scale) {
+        this.x = Math.random() * W;
+        this.y = y;
+        this.speed = speed;
+        this.scale = scale;
+        this.wheelAngle = 0;
+        this.color = `rgb(${40 + Math.random() * 30}, ${30 + Math.random() * 20}, 20)`;
+    }
+    
+    update() {
+        this.x += this.speed;
+        this.wheelAngle += this.speed * 0.2;
+        if (this.x > W + 200) this.x = -200;
+        if (this.x < -200) this.x = W + 200;
+    }
+    
+    draw() {
+        ctx.save();
+        ctx.translate(this.x, this.y);
+        ctx.scale(this.scale, this.scale);
+        
+        // Кузов
+        ctx.fillStyle = this.color;
+        ctx.fillRect(-40, -15, 80, 30);
+        
+        // Кабина
+        ctx.fillStyle = '#222';
+        ctx.fillRect(25, -20, 25, 20);
+        
+        // Колёса
+        ctx.fillStyle = '#111';
+        for (let i = -25; i <= 25; i += 25) {
+            ctx.save();
+            ctx.translate(i, 15);
+            ctx.rotate(this.wheelAngle);
+            ctx.beginPath();
+            ctx.arc(0, 0, 8, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+        }
+        
+        // Груз (если есть)
+        if (Math.random() > 0.5) {
+            ctx.fillStyle = '#553311';
+            ctx.fillRect(-35, -25, 70, 10);
+        }
+        
+        ctx.restore();
+    }
+}
+
+// Класс для истребителя
+class Fighter {
+    constructor(y, speed) {
+        this.x = Math.random() * W;
+        this.y = y;
+        this.speed = speed * 2;
+        this.baseY = y;
+        this.timer = Math.random() * Math.PI * 2;
+        this.roll = 0;
+    }
+    
+    update() {
+        this.x += this.speed;
+        this.timer += 0.1;
+        this.roll = Math.sin(this.timer * 0.5) * 0.3;
+        this.y = this.baseY + Math.sin(this.timer) * 10;
+        
+        if (this.x > W + 200) this.x = -200;
+        if (this.x < -200 && this.speed < 0) this.x = W + 200;
+    }
+    
+    draw() {
+        ctx.save();
+        ctx.translate(this.x, this.y);
+        ctx.rotate(this.roll);
+        
+        // Корпус
+        ctx.fillStyle = '#555';
+        ctx.beginPath();
+        ctx.moveTo(-40, 0);
+        ctx.lineTo(40, 0);
+        ctx.lineTo(30, -8);
+        ctx.lineTo(-30, -8);
+        ctx.closePath();
+        ctx.fill();
+        
+        // Крылья
+        ctx.fillStyle = '#444';
+        ctx.fillRect(-15, 2, 30, 4);
+        ctx.fillRect(20, -5, 25, 2);
+        ctx.fillRect(-45, -5, 25, 2);
+        
+        // Кабина
+        ctx.fillStyle = '#2a4a6a';
+        ctx.beginPath();
+        ctx.arc(-25, -6, 6, 0, Math.PI * 2);
+        ctx.fill();
+        
+        ctx.restore();
+    }
 }
 
 class Tank {
     constructor(y, speed, scale, color, z) {
-        this.x = Math.random() * W; this.y = y; this.speed = speed; this.scale = scale; this.color = color; this.z = z;
-        this.wAngle = 0; this.fireT = 150 + Math.random() * 300;
+        this.x = Math.random() * W;
+        this.y = y;
+        this.speed = speed * (menuActive ? 0.7 : 1); // Медленнее в режиме меню
+        this.scale = scale;
+        this.color = color;
+        this.z = z;
+        this.wAngle = 0;
+        this.fireT = 150 + Math.random() * 300;
+        this.tracks = [];
+        this.state = 'moving'; // moving, firing, turning
+        this.turnTimer = 0;
     }
     update() {
-        this.x += this.speed; this.wAngle += this.speed * 0.15;
-        if(this.x > W + 200) this.x = -200;
-        if(--this.fireT < 0) {
-            // Вспышка: теперь СТРОГО на срезе ствола (смещение 65)
-            tankFlashes.push({x: this.x + 65*this.scale, y: this.y - 12*this.scale, l: 1.0, s: this.scale});
+        // Случайные изменения поведения
+        if (Math.random() < 0.005) {
+            this.state = ['moving', 'firing', 'turning'][Math.floor(Math.random() * 3)];
+            this.turnTimer = 60;
+        }
+        
+        if (this.state === 'turning' && this.turnTimer > 0) {
+            this.turnTimer--;
+            this.speed *= 0.9;
+        } else {
+            this.state = 'moving';
+        }
+        
+        this.x += this.speed;
+        this.wAngle += this.speed * 0.15;
+        
+        // Следы от гусениц
+        if (Math.abs(this.speed) > 0.1 && Math.random() < 0.3) {
+            this.tracks.push({
+                x: this.x - 40 * this.scale + Math.random() * 20,
+                y: this.y + 15 * this.scale,
+                life: 1.0,
+                width: 15 * this.scale,
+                height: 4 * this.scale
+            });
+        }
+        
+        // Обновление следов
+        this.tracks.forEach((track, i) => {
+            track.life -= 0.02;
+            if (track.life <= 0) this.tracks.splice(i, 1);
+        });
+        
+        if (this.x > W + 200) this.x = -200;
+        if (this.x < -200) this.x = W + 200;
+        
+        // Вспышки выстрелов
+        if (--this.fireT < 0) {
+            if (this.state === 'firing' || Math.random() < 0.7) {
+                tankFlashes.push({
+                    x: this.x + 65 * this.scale, 
+                    y: this.y - 12 * this.scale, 
+                    l: 1.0, 
+                    s: this.scale,
+                    z: this.z
+                });
+                
+                // Создание дульного вспышки частиц
+                for (let i = 0; i < 5; i++) {
+                    const p = getParticle();
+                    p.x = this.x + 65 * this.scale;
+                    p.y = this.y - 12 * this.scale;
+                    p.vx = (Math.random() - 0.5) * 3;
+                    p.vy = Math.random() * -2;
+                    p.life = 0.5 + Math.random() * 0.5;
+                    p.color = `rgb(255, ${150 + Math.random() * 100}, 0)`;
+                    p.size = 2 + Math.random() * 4;
+                    particles.push(p);
+                }
+            }
             this.fireT = 300 + Math.random() * 400;
         }
     }
-    draw(tCtx = ctx, tx = this.x, ty = this.y, ts = this.scale, tw = this.wAngle) {
-        tCtx.save(); tCtx.translate(tx, ty); tCtx.scale(ts, ts);
-        tCtx.fillStyle = '#111'; tCtx.fillRect(-45, 8, 90, 18);
-        tCtx.fillStyle = '#333'; for(let i = -35; i <= 35; i += 14) {
-            tCtx.save(); tCtx.translate(i, 18); tCtx.rotate(tw);
-            tCtx.beginPath(); tCtx.arc(0,0,6,0,7); tCtx.fill(); tCtx.restore();
+    draw(tCtx = ctx, tx = this.x, ty = this.y, ts = this.scale, tw = this.wAngle, isLib = false) {
+        // Сначала рисуем следы
+        this.tracks.forEach(track => {
+            ctx.save();
+            ctx.globalAlpha = track.life * 0.3;
+            ctx.fillStyle = '#332211';
+            ctx.fillRect(
+                track.x - track.width/2,
+                track.y - track.height/2,
+                track.width,
+                track.height
+            );
+            ctx.restore();
+        });
+        
+        // Потом сам танк
+        tCtx.save();
+        tCtx.translate(tx, ty);
+        tCtx.scale(ts, ts);
+        
+        // Основание
+        tCtx.fillStyle = '#111';
+        tCtx.fillRect(-45, 8, 90, 18);
+        
+        // Гусеницы с анимацией
+        tCtx.fillStyle = '#333';
+        for (let i = -35; i <= 35; i += 14) {
+            tCtx.save();
+            tCtx.translate(i, 18);
+            if (!isLib) tCtx.rotate(tw);
+            tCtx.beginPath();
+            tCtx.arc(0, 0, 6, 0, Math.PI * 2);
+            tCtx.fill();
+            tCtx.restore();
         }
-        tCtx.fillStyle = this.color; tCtx.beginPath(); tCtx.moveTo(-45,10); tCtx.lineTo(-40,-5); tCtx.lineTo(35,-5); tCtx.lineTo(45,10); tCtx.fill();
-        tCtx.save(); tCtx.translate(-5, -5); tCtx.beginPath(); tCtx.arc(0,0,18,Math.PI,0); tCtx.fill();
-        tCtx.fillStyle = '#111'; tCtx.fillRect(15, -7, 50, 4); tCtx.restore(); tCtx.restore();
+        
+        // Корпус
+        tCtx.fillStyle = this.color;
+        tCtx.beginPath();
+        tCtx.moveTo(-45, 10);
+        tCtx.lineTo(-40, -5);
+        tCtx.lineTo(35, -5);
+        tCtx.lineTo(45, 10);
+        tCtx.closePath();
+        tCtx.fill();
+        
+        // Башня
+        tCtx.save();
+        tCtx.translate(-5, -5);
+        tCtx.beginPath();
+        tCtx.arc(0, 0, 18, Math.PI, 0);
+        tCtx.fill();
+        
+        // Пушка
+        tCtx.fillStyle = '#111';
+        tCtx.fillRect(15, -7, 50, 4);
+        tCtx.restore();
+        
+        tCtx.restore();
     }
 }
 
 class Plane {
     constructor(y, speed, type, z) {
-        this.x = W + 400; this.y = y; this.baseY = y; this.speed = speed * 0.35; 
-        this.type = type; this.z = z; this.timer = Math.random()*10;
+        this.x = W + 400;
+        this.y = y;
+        this.baseY = y;
+        this.speed = speed * (menuActive ? 0.25 : 0.35); // Медленнее в меню
+        this.z = z;
+        this.timer = 0;
+        this.type = type;
+        this.formationOffset = 0;
+        if (type === 'formation') {
+            this.formationOffset = (Math.random() - 0.5) * 100;
+        }
     }
     update() {
-        this.x -= this.speed; this.timer += 0.04;
-        let wave = Math.sin(this.timer);
-        this.y = this.baseY + wave * 30;
-        if(this.type === 'fighter' && Math.random() < 0.35) {
-            bullets.push({x: this.x - 40, y: this.y + 10, a: wave*0.2, v: 22, l: 40});
-        } else if(this.type === 'bomber' && Math.random() < 0.005) {
-            bombs.push({x:this.x, y:this.y, vy:1, z:this.z});
-            playBombEffect(this.z);
+        this.x -= this.speed;
+        this.timer += 0.04;
+        
+        if (this.type === 'formation') {
+            this.y = this.baseY + Math.sin(this.timer) * 10 + this.formationOffset;
+        } else {
+            this.y = this.baseY + Math.sin(this.timer) * 30;
         }
-        if(this.x < -500) this.x = W + 500;
+        
+        // Сброс бомб в зависимости от режима
+        let bombChance = 0.005;
+        if (currentMode === 'air') bombChance = 0.01;
+        if (currentMode === 'menu') bombChance = 0.002;
+        
+        if (Math.random() < bombChance) {
+            bombs.push({
+                x: this.x,
+                y: this.y,
+                vy: 1,
+                z: this.z,
+                type: this.type
+            });
+            playBombEffect(this.z, this.x);
+        }
+        
+        if (this.x < -500) this.x = W + 500;
     }
     draw(tCtx = ctx, tx = this.x, ty = this.y, ts = this.z) {
-        tCtx.save(); tCtx.translate(tx, ty); tCtx.scale(ts, ts);
-        tCtx.fillStyle = '#2d3325';
-        // Детальное крыло
-        tCtx.beginPath(); tCtx.moveTo(-60, 0); tCtx.lineTo(60, 0); tCtx.lineTo(40, 15); tCtx.lineTo(-40, 15); tCtx.closePath(); tCtx.fill();
-        // Фюзеляж
-        tCtx.fillStyle = '#3e4432'; tCtx.fillRect(-70, -4, 130, 12);
-        // Хвост
+        tCtx.save();
+        tCtx.translate(tx, ty);
+        tCtx.scale(ts, ts);
+        
+        tCtx.fillStyle = currentMode === 'night' ? '#1a1e14' : '#2d3325';
+        tCtx.beginPath();
+        tCtx.moveTo(-60, 0);
+        tCtx.lineTo(60, 0);
+        tCtx.lineTo(40, 15);
+        tCtx.lineTo(-40, 15);
+        tCtx.closePath();
+        tCtx.fill();
+        
+        tCtx.fillStyle = currentMode === 'night' ? '#2a3020' : '#3e4432';
+        tCtx.fillRect(-70, -4, 130, 12);
         tCtx.fillRect(-70, -15, 10, 30);
+        
+        // Окна кабины
+        if (currentMode !== 'night') {
+            tCtx.fillStyle = '#4a5a8a';
+            for (let i = -50; i <= 30; i += 20) {
+                tCtx.fillRect(i, -8, 8, 4);
+            }
+        }
+        
         tCtx.restore();
     }
 }
 
-function setupSelectors() {
-    const mBox = document.getElementById('march-opts');
-    mBox.innerHTML = '';
-    for(let i=0; i<20; i++) {
-        const d = document.createElement('div');
-        d.className = 'opt' + (i === selectedMarch ? ' active-opt' : '');
-        d.innerText = i < 10 ? 'М' + (i+1) : 'МЕЛ.' + (i-9);
-        d.onclick = () => { selectedMarch = i; setupSelectors(); };
-        mBox.appendChild(d);
+// Функции для управления меню
+function toggleMenu() {
+    const menu = document.getElementById('menu-overlay');
+    menuActive = !menuActive;
+    menu.style.display = menuActive ? 'block' : 'none';
+    
+    if (menuActive) {
+        // Снижаем активность при открытом меню
+        daySpeed = 0.00001;
+        masterGain.gain.value *= 0.5;
+    } else {
+        daySpeed = 0.00003;
+        masterGain.gain.value = document.getElementById('volume-slider').value / 100;
     }
-    const bBox = document.getElementById('bomb-opts');
-    bBox.innerHTML = '';
-    for(let i=0; i<10; i++) {
-        const d = document.createElement('div');
-        d.className = 'opt' + (i === selectedBombSound ? ' active-opt' : '');
-        d.innerText = 'СВИСТ ' + (i+1);
-        d.onclick = () => { selectedBombSound = i; setupSelectors(); };
-        bBox.appendChild(d);
+}
+
+function startGame(mode) {
+    currentMode = mode;
+    menuActive = false;
+    document.getElementById('menu-overlay').style.display = 'none';
+    document.getElementById('mode-indicator').textContent = 
+        mode === 'tank' ? 'ТАНКОВАЯ БИТВА' : 
+        mode === 'air' ? 'ВОЗДУШНЫЙ НАЛЁТ' : 
+        'НОЧНАЯ ОПЕРАЦИЯ';
+    
+    // Настройка под выбранный режим
+    switch(mode) {
+        case 'tank':
+            vehicles.forEach(v => v.speed *= 1.5);
+            planes.forEach(p => p.speed *= 0.5);
+            timeOfDay = 0.7; // День
+            break;
+        case 'air':
+            planes.forEach(p => p.speed *= 1.5);
+            vehicles.forEach(v => v.speed *= 0.7);
+            timeOfDay = 0.4; // Вечер
+            break;
+        case 'night':
+            timeOfDay = 0.1; // Ночь
+            // Добавляем прожектора
+            for (let i = 0; i < 3; i++) {
+                spotlights.push({
+                    x: Math.random() * W,
+                    y: H - 50,
+                    angle: Math.random() * Math.PI * 2,
+                    speed: 0.01 + Math.random() * 0.02,
+                    width: 0.5 + Math.random() * 0.3
+                });
+            }
+            break;
     }
+    
+    masterGain.gain.value = document.getElementById('volume-slider').value / 100;
 }
 
 function toggleLib() {
     const l = document.getElementById('library-overlay');
-    const isShowing = l.style.display === 'block';
-    l.style.display = isShowing ? 'none' : 'block';
-    if(!isShowing) renderArchive();
+    l.style.display = l.style.display === 'block' ? 'none' : 'block';
+    if (l.style.display === 'block') {
+        const pa = document.getElementById('p-arch'), ta = document.getElementById('t-arch');
+        pa.innerHTML = '<h3>АВИАЦИЯ</h3>';
+        ta.innerHTML = '<h3>БРОНЕТЕХНИКА</h3>';
+        archive.forEach(num => {
+            pa.innerHTML += `<div class="archive-item">ГЕН-${num}<canvas id="ap${num}" class="prev" width="160" height="60"></canvas></div>`;
+            ta.innerHTML += `<div class="archive-item">ГЕН-${num}<canvas id="at${num}" class="prev" width="160" height="60"></canvas></div>`;
+            setTimeout(() => {
+                const pc = document.getElementById(`ap${num}`).getContext('2d');
+                const tc = document.getElementById(`at${num}`).getContext('2d');
+                if (num >= 29) {
+                    if (planes[0]) planes[0].draw(pc, 80, 25, 0.6);
+                    if (vehicles[2]) vehicles[2].draw(tc, 80, 30, 0.7, 0, true);
+                } else {
+                    pc.fillStyle = '#222';
+                    pc.fillRect(40, 25, 80, 10);
+                    tc.fillStyle = '#222';
+                    tc.fillRect(40, 30, 80, 20);
+                }
+            }, 50);
+        });
+    }
 }
 
-function renderArchive() {
-    const pCol = document.getElementById('planes-arch');
-    const tCol = document.getElementById('tanks-arch');
-    pCol.innerHTML = '<h3>АВИАЦИЯ</h3>'; tCol.innerHTML = '<h3>БРОНЕТЕХНИКА</h3>';
-    archive.forEach(num => {
-        const p = document.createElement('div'); p.className = 'archive-item';
-        p.innerHTML = `ГЕН-${num} <canvas id="ap${num}" class="prev" width="160" height="60"></canvas>`;
-        pCol.appendChild(p);
-        const t = document.createElement('div'); t.className = 'archive-item';
-        t.innerHTML = `ГЕН-${num} <canvas id="at${num}" class="prev" width="160" height="60"></canvas>`;
-        tCol.appendChild(t);
-        setTimeout(() => {
-            const pc = document.getElementById(`ap${num}`).getContext('2d');
-            const tc = document.getElementById(`at${num}`).getContext('2d');
-            planes[0].draw(pc, 80, 30, 0.7);
-            vehicles[2].draw(tc, 80, 30, 0.7, 0);
-        }, 20);
-    });
+// Инициализация сцены
+function initScene() {
+    // Горы на заднем плане
+    mountains.length = 0;
+    for (let i = 0; i < 7; i++) {
+        mountains.push({
+            x: Math.random() * W * 1.5,
+            height: 60 + Math.random() * 100,
+            width: 150 + Math.random() * 250,
+            speed: 0.05 + Math.random() * 0.15,
+            color: `rgb(${20 + i*5}, ${25 + i*4}, ${30 + i*3})`,
+            layer: i < 3 ? 'far' : 'near'
+        });
+    }
+    
+    // Облака
+    clouds.length = 0;
+    for (let i = 0; i < 10; i++) {
+        clouds.push({
+            x: Math.random() * W,
+            y: 30 + Math.random() * 100,
+            width: 100 + Math.random() * 200,
+            height: 20 + Math.random() * 30,
+            speed: 0.1 + Math.random() * 0.3,
+            opacity: 0.3 + Math.random() * 0.4
+        });
+    }
+    
+    // Птицы
+    birds.length = 0;
+    for (let i = 0; i < 8; i++) {
+        birds.push({
+            x: Math.random() * W,
+            y: 50 + Math.random() * 100,
+            speed: 1 + Math.random() * 2,
+            size: 2 + Math.random() * 3,
+            flapping: Math.random() * Math.PI * 2
+        });
+    }
+    
+    // Пехота
+    infantry.length = 0;
+    for (let i = 0; i < 6; i++) {
+        infantry.push(new Infantry(
+            H - 180 + Math.random() * 100,
+            Math.random() > 0.5 ? 'left' : 'right'
+        ));
+    }
+    
+    // Грузовики
+    for (let i = 0; i < 2; i++) {
+        vehicles.push(new Truck(
+            H - 140 + i * 40,
+            (0.3 + Math.random() * 0.4) * (Math.random() > 0.5 ? 1 : -1),
+            0.4 + Math.random() * 0.2
+        ));
+    }
+    
+    // Истребители
+    for (let i = 0; i < 3; i++) {
+        planes.push(new Fighter(
+            H * 0.1 + i * 80,
+            3 + Math.random() * 2
+        ));
+    }
+    
+    // Самолеты строем
+    for (let i = 0; i < 2; i++) {
+        const plane = new Plane(
+            H * 0.3 + i * 60,
+            4,
+            'formation',
+            0.9
+        );
+        plane.formationOffset = i * 40 - 20;
+        planes.push(plane);
+    }
+    
+    // Костры/пожары
+    for (let i = 0; i < 3; i++) {
+        fires.push({
+            x: 100 + Math.random() * (W - 200),
+            y: H - 50,
+            size: 20 + Math.random() * 30,
+            intensity: 0.5 + Math.random() * 0.5,
+            flicker: Math.random() * Math.PI * 2
+        });
+    }
 }
 
 function resize() {
-    W = window.innerWidth; H = window.innerHeight; canvas.width = W; canvas.height = H;
-    vehicles.length = 0; planes.length = 0;
-    vehicles.push(new Tank(H-160, 0.7, 0.5, '#1e2a1a', 0.5));
-    vehicles.push(new Tank(H-110, 1.1, 0.8, '#2d4028', 0.8));
-    vehicles.push(new Tank(H-55, 1.7, 1.25, '#3e5c36', 1.2));
-    planes.push(new Plane(H*0.2, 4, 'bomber', 0.8));
-    planes.push(new Plane(H*0.4, 7, 'fighter', 1.1));
+    W = window.innerWidth;
+    H = window.innerHeight;
+    canvas.width = W;
+    canvas.height = H;
+    
+    // Очищаем массивы и переинициализируем
+    vehicles.length = 0;
+    planes.length = 0;
+    infantry.length = 0;
+    
+    // Основные танки
+    vehicles.push(new Tank(H - 160, 0.7, 0.5, '#1e2a1a', 0.5));
+    vehicles.push(new Tank(H - 110, 1.1, 0.8, '#2d4028', 0.8));
+    vehicles.push(new Tank(H - 55, 1.7, 1.25, '#3e5c36', 1.2));
+    
+    // Основные бомбардировщики
+    planes.push(new Plane(H * 0.2, 4, 'bomber', 0.8));
+    planes.push(new Plane(H * 0.4, 5, 'bomber', 1.1));
+    
+    // Инициализируем сцену
+    initScene();
+}
+
+// Создание частиц взрыва
+function createExplosion(x, y, scale, color = '#ff5500') {
+    for (let i = 0; i < 20; i++) {
+        const p = getParticle();
+        p.x = x;
+        p.y = y;
+        const angle = Math.random() * Math.PI * 2;
+        const speed = 2 + Math.random() * 4;
+        p.vx = Math.cos(angle) * speed;
+        p.vy = Math.sin(angle) * speed;
+        p.life = 0.5 + Math.random() * 0.5;
+        p.color = color;
+        p.size = 2 + Math.random() * 6;
+        particles.push(p);
+    }
+    
+    // Световая вспышка
+    explosions.push({
+        x: x,
+        y: y,
+        s: scale,
+        l: 1.0,
+        maxSize: 50 * scale
+    });
+}
+
+// Случайные взрывы вдалеке
+function createFarExplosion() {
+    const x = Math.random() * W;
+    const y = H - 100 - Math.random() * 200;
+    farExplosions.push({
+        x: x,
+        y: y,
+        size: 0,
+        maxSize: 30 + Math.random() * 50,
+        life: 1.0,
+        color: `rgb(255, ${100 + Math.random() * 100}, 0)`
+    });
+    
+    // Свет от взрыва
+    const flash = {
+        x: x,
+        y: y,
+        radius: 0,
+        maxRadius: 100 + Math.random() * 100,
+        life: 1.0,
+        color: `rgba(255, 200, 100, 0.3)`
+    };
+    farExplosions.push(flash);
 }
 
 function loop() {
-    ctx.clearRect(0,0,W,H);
-    planes.forEach(p => { p.update(); p.draw(); });
-    vehicles.forEach(v => { v.update(); v.draw(); });
+    // Обновление времени суток
+    timeOfDay += daySpeed;
+    if (timeOfDay > 1) timeOfDay = 0;
     
-    bullets.forEach((b, i) => {
-        ctx.strokeStyle = '#ffd700'; ctx.lineWidth = 2;
-        ctx.beginPath(); ctx.moveTo(b.x, b.y);
-        b.x -= Math.cos(b.a)*b.v; b.y -= Math.sin(b.a)*b.v;
-        ctx.lineTo(b.x, b.y); ctx.stroke();
-        if(b.l-- < 0) bullets.splice(i,1);
+    // Очистка canvas с учетом времени суток
+    const nightFactor = 1 - timeOfDay;
+    const dayColor = timeOfDay;
+    
+    // Градиентный фон неба
+    const skyGradient = ctx.createLinearGradient(0, 0, 0, H);
+    if (currentMode === 'night') {
+        skyGradient.addColorStop(0, '#0a0a20');
+        skyGradient.addColorStop(1, '#050510');
+    } else {
+        const r = Math.floor(5 + dayColor * 10);
+        const g = Math.floor(5 + dayColor * 15);
+        const b = Math.floor(10 + dayColor * 20);
+        skyGradient.addColorStop(0, `rgb(${r}, ${g}, ${b + 10})`);
+        skyGradient.addColorStop(1, `rgb(${r >> 1}, ${g >> 1}, ${b})`);
+    }
+    ctx.fillStyle = skyGradient;
+    ctx.fillRect(0, 0, W, H);
+    
+    // Звезды (только ночью)
+    if (nightFactor > 0.7 || currentMode === 'night') {
+        ctx.fillStyle = `rgba(255, 255, 255, ${nightFactor * 0.8})`;
+        for (let i = 0; i < 50; i++) {
+            const star = {
+                x: (i * 12347) % W,
+                y: (i * 6541) % (H * 0.6),
+                size: (i % 3 + 1) * nightFactor
+            };
+            ctx.beginPath();
+            ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
+            ctx.fill();
+        }
+    }
+    
+    // Облака
+    clouds.forEach(c => {
+        c.x -= c.speed;
+        if (c.x < -c.width) c.x = W + c.width;
+        
+        ctx.fillStyle = `rgba(200, 220, 255, ${c.opacity * dayColor * 0.7})`;
+        ctx.beginPath();
+        ctx.ellipse(c.x, c.y, c.width/2, c.height/2, 0, 0, Math.PI * 2);
+        ctx.fill();
     });
-
-    tankFlashes.forEach((f, i) => {
-        let grad = ctx.createRadialGradient(f.x, f.y, 0, f.x, f.y, 20*f.s);
-        grad.addColorStop(0, `rgba(255, 255, 0, ${f.l})`); grad.addColorStop(1, 'transparent');
-        ctx.fillStyle = grad; ctx.beginPath(); ctx.arc(f.x, f.y, 20*f.s, 0, 7); ctx.fill();
-        f.l -= 0.15; if(f.l <= 0) tankFlashes.splice(i, 1);
+    
+    // Горы (параллакс)
+    mountains.forEach(m => {
+        m.x -= m.speed;
+        if (m.x < -m.width) m.x = W + m.width;
+        
+        const gradient = ctx.createLinearGradient(m.x, H, m.x, H - m.height);
+        const brightness = m.layer === 'far' ? 0.3 : 0.5;
+        gradient.addColorStop(0, `rgb(
+            ${Math.floor(parseInt(m.color.slice(4,7)) * brightness * dayColor)},
+            ${Math.floor(parseInt(m.color.slice(8,11)) * brightness * dayColor)},
+            ${Math.floor(parseInt(m.color.slice(12,15)) * brightness * dayColor)}
+        )`);
+        gradient.addColorStop(1, '#050505');
+        
+        ctx.fillStyle = gradient;
+        ctx.beginPath();
+        ctx.moveTo(m.x, H);
+        ctx.lineTo(m.x + m.width/2, H - m.height);
+        ctx.lineTo(m.x + m.width, H);
+        ctx.closePath();
+        ctx.fill();
     });
-
-    bombs.forEach((b, i) => {
-        b.y += b.vy; b.vy += 0.12;
-        ctx.fillStyle = '#000'; ctx.beginPath(); ctx.arc(b.x, b.y, 4, 0, 7); ctx.fill();
-        let gr = b.z < 0.7 ? H-160 : (b.z < 1 ? H-110 : H-55);
-        if(b.y > gr) { 
-            explosions.push({x:b.x, y:b.y, s:b.z, l:1.0}); bombs.splice(i,1); 
+    
+    // Птицы
+    birds.forEach(b => {
+        b.x += b.speed;
+        b.flapping += 0.2;
+        if (b.x > W + 50) b.x = -50;
+        
+        const wingY = Math.sin(b.flapping) * 3;
+        ctx.fillStyle = `rgba(150, 150, 150, ${0.3 + dayColor * 0.4})`;
+        ctx.beginPath();
+        ctx.ellipse(b.x, b.y + wingY, b.size, b.size/2, 0, 0, Math.PI * 2);
+        ctx.fill();
+    });
+    
+    // Дальние взрывы (случайные)
+    if (Math.random() < 0.002) {
+        createFarExplosion();
+    }
+    
+    // Обновление и отрисовка дальних взрывов
+    farExplosions.forEach((ex, i) => {
+        if (ex.life <= 0) {
+            farExplosions.splice(i, 1);
+            return;
+        }
+        
+        ex.life -= 0.01;
+        ex.size += 2;
+        
+        if (ex.maxRadius) {
+            // Это световая вспышка
+            ex.radius += 5;
+            ctx.fillStyle = ex.color.replace('0.3', (ex.life * 0.3).toFixed(2));
+            ctx.beginPath();
+            ctx.arc(ex.x, ex.y, ex.radius, 0, Math.PI * 2);
+            ctx.fill();
+        } else {
+            // Это огненный взрыв
+            const alpha = ex.life * 0.8;
+            ctx.fillStyle = ex.color.replace('rgb', 'rgba').replace(')', `, ${alpha})`);
+            ctx.beginPath();
+            ctx.arc(ex.x, ex.y, Math.min(ex.size, ex.maxSize), 0, Math.PI * 2);
+            ctx.fill();
         }
     });
-
-    explosions.forEach((ex, i) => {
-        ctx.save(); ctx.globalAlpha = ex.l; ctx.fillStyle = '#ff4500';
-        ctx.beginPath(); ctx.ellipse(ex.x, ex.y, 75*ex.s*(1.2-ex.l), 20*ex.s*(1.2-ex.l), 0, 0, 7);
-        ctx.fill(); ctx.restore();
-        ex.l -= 0.04; if(ex.l <= 0) explosions.splice(i, 1);
+    
+    // Дым
+    smokes.forEach((s, i) => {
+        s.y -= s.speed;
+        s.x += (Math.random() - 0.5) * 1.5;
+        s.life -= 0.008;
+        
+        // Расширение дыма
+        s.size += 0.3;
+        
+        // Градиент для дыма
+        const gradient = ctx.createRadialGradient(s.x, s.y, 0, s.x, s.y, s.size);
+        gradient.addColorStop(0, `rgba(150, 150, 150, ${s.life * 0.4})`);
+        gradient.addColorStop(1, `rgba(100, 100, 100, 0)`);
+        
+        ctx.fillStyle = gradient;
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, s.size, 0, Math.PI * 2);
+        ctx.fill();
+        
+        if (s.life <= 0) smokes.splice(i, 1);
     });
+    
+    // Новый дым от танков и пожаров
+    if (Math.random() < 0.02) {
+        smokes.push({
+            x: Math.random() * W,
+            y: H - 60 + Math.random() * 40,
+            size: 10 + Math.random() * 20,
+            life: 0.5 + Math.random() * 0.5,
+            speed: 0.3 + Math.random() * 0.4
+        });
+    }
+    
+    // Огни/костры
+    fires.forEach(f => {
+        f.flicker += 0.1;
+        const flickerSize = f.size * (0.8 + Math.sin(f.flicker) * 0.2);
+        const flickerIntensity = f.intensity * (0.7 + Math.sin(f.flicker * 2) * 0.3);
+        
+        // Основание огня
+        ctx.fillStyle = `rgba(200, 100, 0, ${flickerIntensity * 0.3})`;
+        ctx.beginPath();
+        ctx.ellipse(f.x, f.y, flickerSize * 0.8, flickerSize * 0.3, 0, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Пламя
+        const flameGradient = ctx.createRadialGradient(f.x, f.y, 0, f.x, f.y, flickerSize);
+        flameGradient.addColorStop(0, `rgba(255, 200, 0, ${flickerIntensity})`);
+        flameGradient.addColorStop(0.5, `rgba(255, 100, 0, ${flickerIntensity * 0.5})`);
+        flameGradient.addColorStop(1, `rgba(255, 50, 0, 0)`);
+        
+        ctx.fillStyle = flameGradient;
+        ctx.beginPath();
+        ctx.arc(f.x, f.y, flickerSize, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Искры
+        if (Math.random() < 0.3) {
+            const spark = getParticle();
+            spark.x = f.x + (Math.random() - 0.5) * 10;
+            spark.y = f.y - f.size * 0.5;
+            spark.vx = (Math.random() - 0.5) * 2;
+            spark.vy = -Math.random() * 3;
+            spark.life = 0.2 + Math.random() * 0.3;
+            spark.color = `rgb(255, ${150 + Math.random() * 100}, 0)`;
+            spark.size = 1 + Math.random() * 2;
+            particles.push(spark);
+        }
+    });
+    
+    // Прожектора (только ночью)
+    if (currentMode === 'night' || nightFactor > 0.7) {
+        spotlights.forEach(s => {
+            s.angle += s.speed;
+            
+            const beamLength = 300;
+            const endX = s.x + Math.cos(s.angle) * beamLength;
+            const endY = s.y + Math.sin(s.angle) * beamLength;
+            
+            // Луч прожектора
+            const beamGradient = ctx.createLinearGradient(s.x, s.y, endX, endY);
+            beamGradient.addColorStop(0, `rgba(255, 255, 200, ${0.1 + nightFactor * 0.2})`);
+            beamGradient.addColorStop(1, 'rgba(255, 255, 200, 0)');
+            
+            ctx.strokeStyle = beamGradient;
+            ctx.lineWidth = 20 * s.width;
+            ctx.beginPath();
+            ctx.moveTo(s.x, s.y);
+            ctx.lineTo(endX, endY);
+            ctx.stroke();
+            
+            // Источник света
+            ctx.fillStyle = `rgba(255, 255, 200, ${0.3 + nightFactor * 0.2})`;
+            ctx.beginPath();
+            ctx.arc(s.x, s.y, 15, 0, Math.PI * 2);
+            ctx.fill();
+        });
+    }
+    
+    // Обновление и отрисовка всех объектов
+    planes.forEach(p => { p.update(); p.draw(); });
+    vehicles.forEach(v => { v.update(); v.draw(); });
+    infantry.forEach(s => { s.update(); s.draw(); });
+    
+    // Частицы
+    particles.forEach((p, i) => {
+        p.x += p.vx;
+        p.y += p.vy;
+        p.vy += 0.1; // гравитация
+        p.life -= 0.02;
+        p.vx *= 0.98; // сопротивление воздуха
+        
+        if (p.life > 0) {
+            ctx.globalAlpha = p.life;
+            ctx.fillStyle = p.color;
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+            ctx.fill();
+        } else {
+            particles.splice(i, 1);
+            recycleParticle(p);
+        }
+    });
+    
+    // Вспышки выстрелов танков
+    tankFlashes.forEach((f, i) => {
+        const gradient = ctx.createRadialGradient(f.x, f.y, 0, f.x, f.y, 25 * f.s);
+        gradient.addColorStop(0, `rgba(255, 255, 0, ${f.l})`);
+        gradient.addColorStop(1, `rgba(255, 100, 0, 0)`);
+        
+        ctx.fillStyle = gradient;
+        ctx.beginPath();
+        ctx.arc(f.x, f.y, 25 * f.s, 0, Math.PI * 2);
+        ctx.fill();
+        
+        f.l -= 0.15;
+        if (f.l <= 0) tankFlashes.splice(i, 1);
+    });
+    
+    // Бомбы
+    bombs.forEach((b, i) => {
+        b.y += b.vy;
+        b.vy += 0.12;
+        
+        // Траектория бомбы
+        ctx.strokeStyle = `rgba(100, 100, 100, 0.3)`;
+        ctx.setLineDash([5, 3]);
+        ctx.beginPath();
+        ctx.moveTo(b.x, b.y);
+        ctx.lineTo(b.x, b.y + 20);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        
+        // Сама бомба
+        ctx.fillStyle = currentMode === 'night' ? '#333' : '#000';
+        ctx.beginPath();
+        ctx.arc(b.x, b.y, 5 * b.z, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Определение земли для столкновения
+        let groundY = H - 160;
+        if (b.z > 0.9) groundY = H - 55;
+        else if (b.z > 0.6) groundY = H - 110;
+        
+        if (b.y > groundY) {
+            createExplosion(b.x, groundY, b.z * 1.5);
+            
+            // Создание воронки
+            for (let j = 0; j < 15; j++) {
+                const p = getParticle();
+                p.x = b.x;
+                p.y = groundY;
+                const angle = Math.random() * Math.PI * 2;
+                const speed = 1 + Math.random() * 3;
+                p.vx = Math.cos(angle) * speed;
+                p.vy = Math.sin(angle) * speed - 2;
+                p.life = 0.3 + Math.random() * 0.4;
+                p.color = '#8B4513';
+                p.size = 2 + Math.random() * 5;
+                particles.push(p);
+            }
+            
+            bombs.splice(i, 1);
+        }
+    });
+    
+    // Взрывы
+    explosions.forEach((ex, i) => {
+        const currentSize = 75 * ex.s * (1 - ex.l);
+        const gradient = ctx.createRadialGradient(ex.x, ex.y, 0, ex.x, ex.y, currentSize);
+        gradient.addColorStop(0, `rgba(255, 200, 0, ${ex.l})`);
+        gradient.addColorStop(0.5, `rgba(255, 100, 0, ${ex.l * 0.7})`);
+        gradient.addColorStop(1, `rgba(255, 50, 0, 0)`);
+        
+        ctx.fillStyle = gradient;
+        ctx.beginPath();
+        ctx.ellipse(ex.x, ex.y, currentSize, currentSize * 0.3, 0, 0, Math.PI * 2);
+        ctx.fill();
+        
+        ex.l -= 0.04;
+        if (ex.l <= 0) explosions.splice(i, 1);
+    });
+    
+    // Снаряды (если есть)
+    shells.forEach((s, i) => {
+        if (!s.active) return;
+        const dx = s.targetX - s.x;
+        const dy = s.targetY - s.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        
+        if (dist < s.speed) {
+            // Попадание
+            explosions.push({
+                x: s.targetX,
+                y: s.targetY,
+                s: 0.5,
+                l: 1.0,
+                maxSize: 30
+            });
+            s.active = false;
+        } else {
+            s.x += (dx / dist) * s.speed;
+            s.y += (dy / dist) * s.speed;
+            
+            // Хвост снаряда
+            const trailGradient = ctx.createRadialGradient(s.x, s.y, 0, s.x, s.y, 10);
+            trailGradient.addColorStop(0, `rgba(0, 255, 255, 0.8)`);
+            trailGradient.addColorStop(1, `rgba(0, 255, 255, 0)`);
+            
+            ctx.fillStyle = trailGradient;
+            ctx.beginPath();
+            ctx.arc(s.x, s.y, 10, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        
+        // Снаряд
+        ctx.fillStyle = '#0ff';
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, 3, 0, Math.PI * 2);
+        ctx.fill();
+    });
+    
+    // Очистка неактивных снарядов
+    shells = shells.filter(s => s.active);
+    
+    // Мерцающие огни вдалеке
+    const flicker = Math.sin(Date.now() / 1000) * 0.5 + 0.5;
+    ctx.fillStyle = `rgba(255, ${150 + flicker * 105}, 100, ${0.5 + flicker * 0.2})`;
+    ctx.beginPath();
+    ctx.arc(W * 0.2, H * 0.7, 3 + flicker * 2, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // Еще один огонек
+    ctx.fillStyle = `rgba(100, 200, 255, ${0.3 + Math.sin(Date.now() / 1300) * 0.2})`;
+    ctx.beginPath();
+    ctx.arc(W * 0.8, H * 0.6, 2 + Math.sin(Date.now() / 800) * 1, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // Индикатор времени суток
+    if (menuActive) {
+        ctx.fillStyle = `rgba(0, 0, 0, 0.5)`;
+        ctx.fillRect(10, H - 30, 200, 20);
+        ctx.fillStyle = timeOfDay > 0.5 ? '#000' : '#fff';
+        ctx.font = '12px Courier New';
+        const timeText = timeOfDay < 0.25 ? 'НОЧЬ' : 
+                        timeOfDay < 0.5 ? 'РАССВЕТ' : 
+                        timeOfDay < 0.75 ? 'ДЕНЬ' : 'ЗАКАТ';
+        ctx.fillText(`ВРЕМЯ: ${timeText}`, 15, H - 15);
+    }
+    
+    // Сброс глобальной прозрачности
+    ctx.globalAlpha = 1.0;
+    
     requestAnimationFrame(loop);
 }
 
-window.addEventListener('mousedown', initAudio);
+// Обработчики событий
+window.addEventListener('mousedown', (e) => {
+    initAudio();
+    
+    // Если меню активно, можно добавлять интерактив
+    if (menuActive && e.target === canvas && Math.random() > 0.7) {
+        shells.push({
+            x: W / 2,
+            y: H - 10,
+            targetX: e.clientX,
+            targetY: e.clientY,
+            speed: 15,
+            active: true
+        });
+    }
+});
+
 window.addEventListener('resize', resize);
-resize(); loop();
+
+// Запуск меню при загрузке
+window.addEventListener('load', () => {
+    resize();
+    setTimeout(() => {
+        document.getElementById('menu-overlay').style.display = 'block';
+        initAudio();
+    }, 1000);
+    loop();
+});
+
+// Автозапуск музыки при первом взаимодействии
+document.addEventListener('click', initAudio);
+document.addEventListener('keydown', initAudio);
 </script>
 </body>
-</html>
+    </html>
